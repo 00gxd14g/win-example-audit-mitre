@@ -1,3 +1,34 @@
+<#
+.SYNOPSIS
+    Configures Windows audit policies and logging settings based on MITRE ATT&CK guidance.
+
+.DESCRIPTION
+    This script enables Windows audit logs guided by MITRE ATT&CK, configures log size and retention
+    settings, and enables advanced PowerShell logging. It is designed to minimize false positive
+    (FP) logging by limiting some categories to success-only or disabling failure logging where
+    it is typically noisy.
+
+    The script performs the following main actions:
+    1. Sets various audit policy subcategories using `auditpol`.
+    2. Configures process creation to include command-line arguments.
+    3. Enables PowerShell Module Logging, Script Block Logging, and Transcription.
+    4. Sets the size of the Security, System, and Application logs to 32 MB and configures them
+       to overwrite old events as needed.
+
+    The original comments in this script are in Turkish.
+
+.EXAMPLE
+    PS C:\> .\win-audit.ps1
+    Executes the script to apply the audit and logging configurations. This command must be run
+    from an elevated PowerShell prompt (Run as Administrator).
+
+.NOTES
+    - This script must be run with Administrator privileges.
+    - The execution policy for PowerShell scripts must be set to allow running local scripts.
+      You can set this for the current process by running:
+      Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+#>
+
 # Requires -ExecutionPolicy Bypass
 # Bu script, Windows üzerinde audit (denetim) loglarını MITRE ATT&CK rehberliğinde etkinleştirir,
 # log boyutu / saklama ayarlarını düzenler, Powershell gelişmiş loglarını açar
