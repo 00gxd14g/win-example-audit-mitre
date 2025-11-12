@@ -35,16 +35,45 @@
 # ve gereksiz (FP) loglamayı en aza indirmek için bazı kategorileri yalnızca başarı/açık kapalı şeklinde sınırlar.
 # Lütfen betiği Yönetici (Administrator) olarak çalıştırın.
 
+# Import logging module
+$loggingModule = Join-Path -Path $PSScriptRoot -ChildPath "Write-AuditLog.ps1"
+if (Test-Path $loggingModule) {
+    . $loggingModule
+    Initialize-AuditLogging -ScriptName "win-audit" -EnableTranscript
+    Write-AuditLog -Message "Script started - Configuring Windows Audit Policies" -Level Info
+} else {
+    Write-Warning "Logging module not found at $loggingModule - continuing without enhanced logging"
+}
+
+# Force UTF-8 output to avoid mojibake (e.g., Turkish characters)
+try { chcp 65001 > $null } catch {}
+try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
+$OutputEncoding = [System.Text.Encoding]::UTF8
+
 Write-Host "`n=== Windows Audit Policy ve Log Ayarlarını Yapılandırma Başlıyor... ===`n"
 
 # 1) Audit Policileri Ayarlama (auditpol komutları)
 # --------------------------------------------------
 
 Write-Host "Audit Policy alt kategorileri etkinleştiriliyor..."
+if (Get-Command Write-AuditLog -ErrorAction SilentlyContinue) {
+    Write-AuditLog -Message "Configuring audit policy subcategories" -Level Info
+}
 
 auditpol /set /subcategory:"Logon" /success:enable /failure:enable
+if (Get-Command Write-AuditLog -ErrorAction SilentlyContinue) {
+    Write-AuditLog -Message "Enabled Logon auditing (success and failure)" -Level Debug
+}
+
 auditpol /set /subcategory:"Directory Service Changes" /success:enable /failure:enable
+if (Get-Command Write-AuditLog -ErrorAction SilentlyContinue) {
+    Write-AuditLog -Message "Enabled Directory Service Changes auditing" -Level Debug
+}
+
 auditpol /set /subcategory:"Process Creation" /success:enable /failure:disable
+if (Get-Command Write-AuditLog -ErrorAction SilentlyContinue) {
+    Write-AuditLog -Message "Enabled Process Creation auditing (success only)" -Level Debug
+}
 auditpol /set /subcategory:"User Account Management" /success:enable /failure:enable
 auditpol /set /subcategory:"Directory Service Access" /success:enable /failure:enable
 auditpol /set /subcategory:"SAM" /success:enable /failure:enable
@@ -64,25 +93,25 @@ Write-Host "Audit Policileri güncellendi.`n"
 Write-Host "Process Creation (komut satırı) ve PowerShell log ayarları yapılıyor..."
 
 # Process Creation komut satırını eklemek için:
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Audit" ^
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Audit" `
     /v ProcessCreationIncludeCmdLine_Enabled /t REG_DWORD /d 1 /f
 
 # PowerShell Module Logging
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging" ^
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging" `
     /v EnableModuleLogging /t REG_DWORD /d 1 /f
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging\ModuleNames" ^
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging\ModuleNames" `
     /v "*" /t REG_SZ /d "*" /f
 
 # PowerShell Script Block Logging
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging" ^
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging" `
     /v EnableScriptBlockLogging /t REG_DWORD /d 1 /f
 
 # PowerShell Transcription
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" ^
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" `
     /v EnableInvocationHeader /t REG_DWORD /d 1 /f
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" ^
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" `
     /v EnableTranscripting /t REG_DWORD /d 1 /f
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" ^
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" `
     /v OutputDirectory /t REG_SZ /d "C:\pstranscripts" /f
 
 Write-Host "Process Creation ve PowerShell log ayarları tamamlandı.`n"
@@ -110,5 +139,15 @@ foreach ($logPath in $logPaths) {
 
 Write-Host "Event Log boyutu ve saklama ayarları tamamlandı.`n"
 
+if (Get-Command Write-AuditLog -ErrorAction SilentlyContinue) {
+    Write-AuditLog -Message "Event log size and retention settings completed" -Level Success
+    Write-AuditLog -Message "All Windows audit policies have been successfully applied" -Level Success
+}
+
 Write-Host "=== Tüm ayarlar başarıyla uygulandı! ==="
 Write-Output "İşlem tamamlandı."
+
+# Stop logging if module is available
+if (Get-Command Stop-AuditLogging -ErrorAction SilentlyContinue) {
+    Stop-AuditLogging -ScriptName "win-audit"
+}

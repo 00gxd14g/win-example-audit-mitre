@@ -36,14 +36,9 @@ RUN wevtutil sl Security /ms:67108864; `
     wevtutil sl Application /ms:67108864; `
     wevtutil sl "Microsoft-Windows-PowerShell/Operational" /ms:67108864
 
-# Enable advanced audit policies required for testing
-RUN auditpol /set /category:"Object Access" /success:enable /failure:enable; `
-    auditpol /set /category:"Logon/Logoff" /success:enable /failure:enable; `
-    auditpol /set /category:"Process Tracking" /success:enable /failure:enable; `
-    auditpol /set /category:"Account Management" /success:enable /failure:enable; `
-    auditpol /set /category:"Policy Change" /success:enable /failure:enable; `
-    auditpol /set /category:"Privilege Use" /success:enable /failure:enable; `
-    auditpol /set /category:"System" /success:enable /failure:enable
+# Note: We do NOT set auditpol at image build time to avoid localization
+# and platform differences causing non-zero exit codes. Audit policies are
+# configured at runtime by scripts/win-audit.ps1 and scripts/SysmonLikeAudit.ps1.
 
 # Enable process command line logging
 RUN reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Audit" /v ProcessCreationIncludeCmdLine_Enabled /t REG_DWORD /d 1 /f

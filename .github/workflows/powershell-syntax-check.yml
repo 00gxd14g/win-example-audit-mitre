@@ -1,0 +1,89 @@
+name: PowerShell Syntax Check
+
+on:
+  push:
+    paths:
+      - 'scripts/*.ps1'
+      - '.github/workflows/powershell-syntax-check.yml'
+  pull_request:
+    paths:
+      - 'scripts/*.ps1'
+  workflow_dispatch:
+
+jobs:
+  syntax-check:
+    name: PowerShell Syntax Validation
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate PowerShell Scripts Syntax
+        run: |
+          Write-Host "========================================" -ForegroundColor Cyan
+          Write-Host "PowerShell Syntax Validation" -ForegroundColor Cyan
+          Write-Host "========================================" -ForegroundColor Cyan
+
+          $scripts = Get-ChildItem -Path "${{ github.workspace }}\scripts" -Filter "*.ps1" -File
+          $totalScripts = $scripts.Count
+          $validScripts = 0
+          $invalidScripts = 0
+          $errors = @()
+
+          Write-Host "`nFound $totalScripts PowerShell scripts to validate" -ForegroundColor Yellow
+          Write-Host ""
+
+          foreach ($script in $scripts) {
+              Write-Host "Checking: $($script.Name)" -ForegroundColor Cyan -NoNewline
+
+              try {
+                  $content = Get-Content $script.FullName -Raw
+                  $syntaxErrors = $null
+                  $null = [System.Management.Automation.PSParser]::Tokenize($content, [ref]$syntaxErrors)
+
+                  if ($syntaxErrors.Count -eq 0) {
+                      Write-Host " ✓" -ForegroundColor Green
+                      $validScripts++
+                  } else {
+                      Write-Host " ✗" -ForegroundColor Red
+                      $invalidScripts++
+                      $errors += @{
+                          Script = $script.Name
+                          Errors = $syntaxErrors
+                      }
+
+                      Write-Host "  Errors found:" -ForegroundColor Red
+                      foreach ($error in $syntaxErrors) {
+                          Write-Host "    Line $($error.Token.StartLine): $($error.Message)" -ForegroundColor Red
+                      }
+                  }
+              } catch {
+                  Write-Host " ✗" -ForegroundColor Red
+                  Write-Host "  Failed to parse: $_" -ForegroundColor Red
+                  $invalidScripts++
+                  $errors += @{
+                      Script = $script.Name
+                      Errors = @($_)
+                  }
+              }
+          }
+
+          Write-Host ""
+          Write-Host "========================================" -ForegroundColor Cyan
+          Write-Host "Validation Summary" -ForegroundColor Cyan
+          Write-Host "========================================" -ForegroundColor Cyan
+          Write-Host "Total Scripts: $totalScripts" -ForegroundColor White
+          Write-Host "Valid Scripts: $validScripts" -ForegroundColor Green
+          Write-Host "Invalid Scripts: $invalidScripts" -ForegroundColor $(if($invalidScripts -gt 0){'Red'}else{'Green'})
+
+          if ($invalidScripts -gt 0) {
+              Write-Host ""
+              Write-Host "❌ Syntax validation FAILED!" -ForegroundColor Red
+              Write-Host "Please fix the syntax errors in the above scripts." -ForegroundColor Yellow
+              exit 1
+          } else {
+              Write-Host ""
+              Write-Host "✅ All scripts have valid syntax!" -ForegroundColor Green
+          }
+        shell: pwsh

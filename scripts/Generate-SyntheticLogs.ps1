@@ -84,6 +84,11 @@ param(
     [string]$ExportFormat = "JSON"
 )
 
+# Ensure UTF-8 encoding for console and files
+try { chcp 65001 > $null } catch {}
+try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
+$OutputEncoding = [System.Text.Encoding]::UTF8
+
 # Initialize
 $script:GeneratedEvents = @()
 $startTime = (Get-Date).AddMinutes(-$TimeSpan)
