@@ -238,7 +238,7 @@ jobs:
                       Write-Host "Syntax check passed" -ForegroundColor Green
 
                       # Execute with parameters and logging
-                      & $scriptPath -Count 10 -Verbose *>&1 | Tee-Object -FilePath $logFile
+                      & $scriptPath -EventCount 10 -Verbose *>&1 | Tee-Object -FilePath $logFile
 
                       Write-Host "Script executed successfully" -ForegroundColor Green
                   } else {
@@ -488,8 +488,18 @@ jobs:
 
           # Copy logs from container
           New-Item -ItemType Directory -Force -Path .\container-logs
-          docker cp log-test-container:C:\pstranscripts\. .\container-logs\
-          docker cp log-test-container:C:\logs\. .\container-logs\ 2>$null
+
+          # Copy transcript files
+          docker exec log-test-container cmd /c dir C:\pstranscripts /b > $null 2>&1
+          if ($LASTEXITCODE -eq 0) {
+              docker cp log-test-container:C:/pstranscripts .\container-logs\
+          }
+
+          # Copy log files
+          docker exec log-test-container cmd /c dir C:\logs /b > $null 2>&1
+          if ($LASTEXITCODE -eq 0) {
+              docker cp log-test-container:C:/logs .\container-logs\
+          }
 
           Write-Host "Log validation in Docker completed" -ForegroundColor Green
         shell: pwsh

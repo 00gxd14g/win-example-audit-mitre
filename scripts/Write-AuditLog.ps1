@@ -211,5 +211,5 @@ function Stop-AuditLogging {
     }
 }
 
-# Export functions
-Export-ModuleMember -Function Write-AuditLog, Initialize-AuditLogging, Stop-AuditLogging
+# Note: Export-ModuleMember is only for modules (.psm1 files)
+# Since this is a .ps1 script that gets dot-sourced, functions are automatically available

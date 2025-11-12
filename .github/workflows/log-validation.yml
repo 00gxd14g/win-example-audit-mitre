@@ -112,7 +112,7 @@ jobs:
                   try {
                       # Run the script
                       if ($script.Name -eq "Generate-SyntheticLogs.ps1") {
-                          & $scriptPath -Count 5 -Verbose
+                          & $scriptPath -EventCount 5 -Verbose
                       } else {
                           & $scriptPath -Verbose
                       }
