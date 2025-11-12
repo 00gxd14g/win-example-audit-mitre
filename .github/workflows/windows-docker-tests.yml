@@ -39,13 +39,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      # Note: Docker Buildx is not needed for Windows containers on Windows runners
+      # Buildx is for multi-platform builds, Windows containers use native Docker
 
       - name: Display Docker info
         run: |
           docker version
           docker info
+          docker system info --format '{{json .}}'
 
       - name: Build Windows Docker image
         run: |

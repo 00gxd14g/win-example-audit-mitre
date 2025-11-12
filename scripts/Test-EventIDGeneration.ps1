@@ -45,6 +45,17 @@ param(
     [switch]$ExportResults
 )
 
+# Import logging module
+$loggingModule = Join-Path -Path $PSScriptRoot -ChildPath "Write-AuditLog.ps1"
+if (Test-Path $loggingModule) {
+    . $loggingModule
+    Initialize-AuditLogging -ScriptName "Test-EventIDGeneration" -EnableTranscript
+    Write-AuditLog -Message "Script started - Testing Event ID Generation" -Level Info
+    Write-AuditLog -Message "Parameters: TestEventGeneration=$TestEventGeneration, DetailedReport=$DetailedReport, ExportResults=$ExportResults" -Level Debug
+} else {
+    Write-Warning "Logging module not found at $loggingModule - continuing without enhanced logging"
+}
+
 #Requires -RunAsAdministrator
 
 # Initialize results
