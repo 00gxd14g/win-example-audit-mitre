@@ -1,0 +1,128 @@
+name: PR Quick Test
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  quick-test:
+    name: Quick Validation Tests
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate PowerShell scripts syntax
+        run: |
+          Write-Host "Validating PowerShell scripts..." -ForegroundColor Cyan
+          $scripts = Get-ChildItem -Path ".\scripts" -Filter "*.ps1" -Recurse
+          $errors = @()
+
+          foreach ($script in $scripts) {
+              Write-Host "Checking: $($script.Name)" -ForegroundColor Yellow
+              $content = Get-Content $script.FullName -Raw
+              $tokens = $null
+              $parseErrors = $null
+              [System.Management.Automation.Language.Parser]::ParseInput($content, [ref]$tokens, [ref]$parseErrors) | Out-Null
+
+              if ($parseErrors) {
+                  $errors += "Syntax errors in $($script.Name):"
+                  $parseErrors | ForEach-Object { $errors += "  - $_" }
+              } else {
+                  Write-Host "  ✓ Valid" -ForegroundColor Green
+              }
+          }
+
+          if ($errors.Count -gt 0) {
+              Write-Host "`nSyntax Errors Found:" -ForegroundColor Red
+              $errors | ForEach-Object { Write-Host $_ -ForegroundColor Red }
+              exit 1
+          } else {
+              Write-Host "`nAll scripts are valid! ✓" -ForegroundColor Green
+          }
+        shell: pwsh
+
+      - name: Validate Dockerfile syntax
+        run: |
+          Write-Host "Validating Dockerfile..." -ForegroundColor Cyan
+          if (Test-Path ".\Dockerfile") {
+              docker build --no-cache --target 0 . 2>&1 | Out-Null
+              if ($LASTEXITCODE -eq 0) {
+                  Write-Host "✓ Dockerfile syntax is valid" -ForegroundColor Green
+              }
+          } else {
+              Write-Host "✗ Dockerfile not found" -ForegroundColor Red
+              exit 1
+          }
+        shell: pwsh
+        continue-on-error: true
+
+      - name: Check documentation
+        run: |
+          Write-Host "Checking documentation files..." -ForegroundColor Cyan
+          $requiredDocs = @("README.md", "docs/EVENT_IDS.md", "docs/MITRE_ATTACK_MAPPING.md")
+          $missing = @()
+
+          foreach ($doc in $requiredDocs) {
+              if (Test-Path $doc) {
+                  Write-Host "✓ Found: $doc" -ForegroundColor Green
+              } else {
+                  $missing += $doc
+                  Write-Host "✗ Missing: $doc" -ForegroundColor Red
+              }
+          }
+
+          if ($missing.Count -gt 0) {
+              Write-Host "`nMissing documentation files!" -ForegroundColor Red
+              exit 1
+          }
+        shell: pwsh
+
+      - name: Test script help documentation
+        run: |
+          Write-Host "Checking PowerShell script documentation..." -ForegroundColor Cyan
+          $scripts = Get-ChildItem -Path ".\scripts" -Filter "*.ps1" -File
+
+          foreach ($script in $scripts) {
+              $help = Get-Help $script.FullName -ErrorAction SilentlyContinue
+              if ($help.Synopsis) {
+                  Write-Host "✓ $($script.Name) has help documentation" -ForegroundColor Green
+              } else {
+                  Write-Host "⚠ $($script.Name) missing help documentation" -ForegroundColor Yellow
+              }
+          }
+        shell: pwsh
+
+      - name: Quick smoke test (non-Docker)
+        run: |
+          Write-Host "Running quick smoke test..." -ForegroundColor Cyan
+
+          # Test audit policy query (read-only, safe)
+          try {
+              $audit = auditpol /get /category:* 2>&1
+              Write-Host "✓ Audit policy query successful" -ForegroundColor Green
+          } catch {
+              Write-Host "✗ Audit policy query failed: $_" -ForegroundColor Red
+          }
+
+          # Test Event Log access (read-only, safe)
+          try {
+              $events = Get-WinEvent -ListLog Security -ErrorAction Stop
+              Write-Host "✓ Event Log access successful" -ForegroundColor Green
+          } catch {
+              Write-Host "⚠ Event Log access limited: $_" -ForegroundColor Yellow
+          }
+
+          # Test PowerShell version compatibility
+          Write-Host "PowerShell Version: $($PSVersionTable.PSVersion)" -ForegroundColor Cyan
+          if ($PSVersionTable.PSVersion.Major -ge 5) {
+              Write-Host "✓ PowerShell version compatible" -ForegroundColor Green
+          } else {
+              Write-Host "✗ PowerShell version too old" -ForegroundColor Red
+              exit 1
+          }
+        shell: pwsh

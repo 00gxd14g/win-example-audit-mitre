@@ -8,6 +8,8 @@ This repository provides comprehensive Windows security auditing scripts, testin
 - **MITRE ATT&CK Mapping**: Complete mapping of Windows Event IDs to MITRE ATT&CK tactics and techniques
 - **Testing Tools**: Scripts to verify audit configuration and event generation
 - **Synthetic Log Generation**: Generate realistic test logs for SIEM testing and detection rule validation
+- **Docker Container Testing**: Isolated Windows containers for reproducible, safe testing
+- **CI/CD Integration**: GitHub Actions workflows for automated testing
 - **Comprehensive Documentation**: Detailed Event ID reference and detection use cases
 
 ## Repository Structure
@@ -18,13 +20,23 @@ win-example-audit-mitre/
 │   ├── SysmonLikeAudit.ps1              # Comprehensive audit configuration
 │   ├── win-audit.ps1                    # MITRE ATT&CK-guided audit configuration
 │   ├── Test-EventIDGeneration.ps1       # Test and verify event generation
-│   └── Generate-SyntheticLogs.ps1       # Generate synthetic logs for testing
+│   ├── Generate-SyntheticLogs.ps1       # Generate synthetic logs for testing
+│   ├── Run-DockerTests.ps1              # Docker test runner
+│   └── Local-DockerTest.ps1             # Local Docker testing helper
 ├── docs/                 # Documentation for Event IDs and MITRE mappings
 │   ├── EVENT_IDS.md                     # Comprehensive Event ID reference
 │   ├── MITRE_ATTACK_MAPPING.md          # MITRE ATT&CK to Event ID mappings
+│   ├── DOCKER_TESTING.md                # Docker testing guide
+│   ├── CI_CD.md                         # CI/CD integration guide
 │   └── README.md                        # Documentation guide
+├── .github/
+│   └── workflows/        # GitHub Actions CI/CD workflows
+│       ├── windows-docker-tests.yml     # Full test suite
+│       └── pr-quick-test.yml            # Quick PR validation
 ├── examples/             # Example queries and detection rules (planned)
 ├── tests/                # Automated testing scripts (planned)
+├── Dockerfile            # Windows Server Core container
+├── docker-compose.yml    # Docker Compose configuration
 └── readme.md             # This file
 ```
 
@@ -78,6 +90,69 @@ Create synthetic logs for testing your SIEM and detection rules:
 # Generate comprehensive test data
 .\Generate-SyntheticLogs.ps1 -Scenario All -IncludeNormalActivity -ExportFormat Both
 ```
+
+## Docker Testing & CI/CD
+
+### Docker Container Testing
+
+Test audit configurations in isolated Windows containers for reproducible, safe testing:
+
+```powershell
+# Quick start - Build, run, and test everything
+.\scripts\Local-DockerTest.ps1 -Action All
+
+# Or use individual commands
+.\scripts\Local-DockerTest.ps1 -Action Build    # Build Docker image
+.\scripts\Local-DockerTest.ps1 -Action Run      # Start container
+.\scripts\Local-DockerTest.ps1 -Action Test     # Run tests
+.\scripts\Local-DockerTest.ps1 -Action Shell    # Interactive shell
+.\scripts\Local-DockerTest.ps1 -Action Clean    # Cleanup
+```
+
+**Using Docker Compose**:
+```powershell
+# Start container
+docker-compose up -d
+
+# Run tests
+docker-compose exec windows-audit-test powershell -File C:\workspace\scripts\Run-DockerTests.ps1
+
+# Stop and remove
+docker-compose down
+```
+
+**Benefits**:
+- **Isolated Environment**: Test without affecting host system
+- **Reproducible**: Consistent results across machines
+- **Automated**: Full CI/CD integration with GitHub Actions
+- **Safe Testing**: Run potentially risky tests in containers
+
+See [docs/DOCKER_TESTING.md](docs/DOCKER_TESTING.md) for comprehensive Docker testing guide.
+
+### GitHub Actions CI/CD
+
+The repository includes automated testing workflows:
+
+**Full Test Suite** (`windows-docker-tests.yml`):
+- Triggered on push to main/develop or pull requests
+- Builds Windows Docker container
+- Runs parallel test suites (Audit Config, Event Generation, Synthetic Logs, Integration)
+- Generates comprehensive test reports
+- Posts results to pull requests
+
+**Quick PR Test** (`pr-quick-test.yml`):
+- Fast validation for pull requests
+- PowerShell syntax checking
+- Dockerfile validation
+- Documentation checks
+
+**Viewing Results**:
+- Navigate to **Actions** tab in GitHub
+- View detailed logs and test results
+- Download test artifacts (JSON results, synthetic logs)
+- See automated PR comments with test summaries
+
+See [docs/CI_CD.md](docs/CI_CD.md) for CI/CD integration details and customization.
 
 ## Audit Configuration Scripts
 

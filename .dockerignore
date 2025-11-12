@@ -1,0 +1,38 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+
+# Documentation (already copied in Dockerfile)
+*.md
+!README.md
+
+# Test results and logs
+test-results/
+logs/
+*.log
+*.evtx
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Windows system files
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# Build artifacts
+*.tar
+*.zip
+
+# Temporary files
+tmp/
+temp/
+*.tmp

@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  windows-audit-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: win-audit-test:latest
+    container_name: windows-audit-testing
+    hostname: win-audit-host
+
+    # Isolation mode for Windows containers
+    # Use 'process' for Windows Server, 'hyperv' for enhanced isolation
+    isolation: process
+
+    # Volume mappings for persistent data and test results
+    volumes:
+      - type: bind
+        source: ./scripts
+        target: C:\workspace\scripts
+      - type: bind
+        source: ./tests
+        target: C:\workspace\tests
+      - type: bind
+        source: ./test-results
+        target: C:\test-results
+      - type: bind
+        source: ./logs
+        target: C:\logs
+
+    # Environment variables for test configuration
+    environment:
+      - AUDIT_MODE=comprehensive
+      - ENABLE_DETAILED_LOGGING=true
+      - TEST_OUTPUT_FORMAT=json
+      - POWERSHELL_TELEMETRY_OPTOUT=1
+
+    # Keep container running for interactive testing
+    stdin_open: true
+    tty: true
+
+    # Network configuration
+    networks:
+      - audit-test-network
+
+    # Resource limits (adjust based on host capacity)
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
+    # Health check configuration
+    healthcheck:
+      test: ["CMD", "powershell", "-Command", "Get-Service EventLog | Where-Object {$_.Status -eq 'Running'}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  audit-test-network:
+    driver: nat

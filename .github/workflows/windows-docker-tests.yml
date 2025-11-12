@@ -1,0 +1,405 @@
+name: Windows Docker Audit Testing
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'claude/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: false
+        default: 'All'
+        type: choice
+        options:
+          - All
+          - AuditConfig
+          - EventGeneration
+          - Synthetic
+          - Integration
+
+env:
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+
+jobs:
+  # Job 1: Build Windows Docker Image
+  build:
+    name: Build Windows Container
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Display Docker info
+        run: |
+          docker version
+          docker info
+
+      - name: Build Windows Docker image
+        run: |
+          Write-Host "Building Windows audit testing container..." -ForegroundColor Cyan
+          docker build -t win-audit-test:latest -t win-audit-test:${{ github.sha }} .
+        shell: pwsh
+
+      - name: Verify image was created
+        run: |
+          docker images win-audit-test
+        shell: pwsh
+
+      - name: Save Docker image
+        run: |
+          docker save win-audit-test:latest -o win-audit-test.tar
+        shell: pwsh
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: win-audit-test.tar
+          retention-days: 1
+
+  # Job 2: Run Audit Configuration Tests
+  test-audit-config:
+    name: Test Audit Configuration
+    needs: build
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Load Docker image
+        run: |
+          docker load -i win-audit-test.tar
+        shell: pwsh
+
+      - name: Start container
+        run: |
+          docker run -d --name audit-test-container win-audit-test:latest
+          Start-Sleep -Seconds 10
+        shell: pwsh
+
+      - name: Check container status
+        run: |
+          docker ps -a
+          docker logs audit-test-container
+        shell: pwsh
+
+      - name: Run audit configuration tests
+        run: |
+          docker exec audit-test-container powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite AuditConfig -OutputFormat JSON -Verbose
+        shell: pwsh
+
+      - name: Copy test results from container
+        if: always()
+        run: |
+          New-Item -ItemType Directory -Force -Path .\test-results
+          docker cp audit-test-container:C:\test-results\. .\test-results\
+        shell: pwsh
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-config-test-results
+          path: test-results/
+
+      - name: Cleanup container
+        if: always()
+        run: |
+          docker stop audit-test-container
+          docker rm audit-test-container
+        shell: pwsh
+
+  # Job 3: Run Event Generation Tests
+  test-event-generation:
+    name: Test Event Generation
+    needs: build
+    runs-on: windows-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Load Docker image
+        run: |
+          docker load -i win-audit-test.tar
+        shell: pwsh
+
+      - name: Start container
+        run: |
+          docker run -d --name event-test-container win-audit-test:latest
+          Start-Sleep -Seconds 10
+        shell: pwsh
+
+      - name: Run event generation tests
+        run: |
+          docker exec event-test-container powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite EventGeneration -OutputFormat JSON -Verbose
+        shell: pwsh
+
+      - name: Copy test results from container
+        if: always()
+        run: |
+          New-Item -ItemType Directory -Force -Path .\test-results
+          docker cp event-test-container:C:\test-results\. .\test-results\
+        shell: pwsh
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: event-generation-test-results
+          path: test-results/
+
+      - name: Cleanup container
+        if: always()
+        run: |
+          docker stop event-test-container
+          docker rm event-test-container
+        shell: pwsh
+
+  # Job 4: Run Synthetic Log Generation Tests
+  test-synthetic-logs:
+    name: Test Synthetic Logs
+    needs: build
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Load Docker image
+        run: |
+          docker load -i win-audit-test.tar
+        shell: pwsh
+
+      - name: Start container
+        run: |
+          docker run -d --name synthetic-test-container win-audit-test:latest
+          Start-Sleep -Seconds 10
+        shell: pwsh
+
+      - name: Run synthetic log generation tests
+        run: |
+          docker exec synthetic-test-container powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite Synthetic -OutputFormat JSON -Verbose
+        shell: pwsh
+
+      - name: Copy test results and logs from container
+        if: always()
+        run: |
+          New-Item -ItemType Directory -Force -Path .\test-results
+          New-Item -ItemType Directory -Force -Path .\synthetic-logs
+          docker cp synthetic-test-container:C:\test-results\. .\test-results\
+        shell: pwsh
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: synthetic-logs-test-results
+          path: test-results/
+
+      - name: Cleanup container
+        if: always()
+        run: |
+          docker stop synthetic-test-container
+          docker rm synthetic-test-container
+        shell: pwsh
+
+  # Job 5: Run Integration Tests
+  test-integration:
+    name: Integration Tests
+    needs: build
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Load Docker image
+        run: |
+          docker load -i win-audit-test.tar
+        shell: pwsh
+
+      - name: Start container with proper isolation
+        run: |
+          docker run -d --name integration-test-container win-audit-test:latest
+          Start-Sleep -Seconds 10
+        shell: pwsh
+
+      - name: Check container health
+        run: |
+          docker ps -a
+          docker inspect integration-test-container
+        shell: pwsh
+
+      - name: Run integration tests
+        run: |
+          docker exec integration-test-container powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite Integration -OutputFormat JSON -Verbose
+        shell: pwsh
+
+      - name: Copy test results from container
+        if: always()
+        run: |
+          New-Item -ItemType Directory -Force -Path .\test-results
+          docker cp integration-test-container:C:\test-results\. .\test-results\
+        shell: pwsh
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: test-results/
+
+      - name: Display container logs
+        if: always()
+        run: |
+          docker logs integration-test-container
+        shell: pwsh
+
+      - name: Cleanup container
+        if: always()
+        run: |
+          docker stop integration-test-container
+          docker rm integration-test-container
+        shell: pwsh
+
+  # Job 6: Generate Test Report
+  report:
+    name: Generate Test Report
+    needs: [test-audit-config, test-event-generation, test-synthetic-logs, test-integration]
+    runs-on: windows-latest
+    if: always()
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          path: all-test-results
+
+      - name: Generate combined test report
+        run: |
+          $results = @()
+          Get-ChildItem -Path "all-test-results" -Filter "*.json" -Recurse | ForEach-Object {
+              $content = Get-Content $_.FullName -Raw | ConvertFrom-Json
+              $results += $content
+          }
+
+          $summary = @{
+              Workflow = "${{ github.workflow }}"
+              Run = "${{ github.run_number }}"
+              Commit = "${{ github.sha }}"
+              Branch = "${{ github.ref_name }}"
+              Timestamp = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+              TotalTests = ($results.Tests | Measure-Object).Count
+              PassedTests = ($results.Tests | Where-Object { $_.Passed -eq $true } | Measure-Object).Count
+              FailedTests = ($results.Tests | Where-Object { $_.Passed -eq $false } | Measure-Object).Count
+          }
+
+          Write-Host "========================================" -ForegroundColor Cyan
+          Write-Host "  Test Summary Report" -ForegroundColor Cyan
+          Write-Host "========================================" -ForegroundColor Cyan
+          Write-Host "Total Tests:  $($summary.TotalTests)" -ForegroundColor White
+          Write-Host "Passed:       $($summary.PassedTests)" -ForegroundColor Green
+          Write-Host "Failed:       $($summary.FailedTests)" -ForegroundColor $(if($summary.FailedTests -gt 0){'Red'}else{'Green'})
+          Write-Host ""
+
+          # Export summary
+          $summary | ConvertTo-Json | Out-File -FilePath "test-summary.json"
+
+          # Create markdown report
+          @"
+          # Windows Audit Testing Report
+
+          **Workflow:** ${{ github.workflow }}
+          **Run:** #${{ github.run_number }}
+          **Commit:** ${{ github.sha }}
+          **Branch:** ${{ github.ref_name }}
+          **Timestamp:** $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+
+          ## Summary
+
+          | Metric | Count |
+          |--------|-------|
+          | Total Tests | $($summary.TotalTests) |
+          | Passed | $($summary.PassedTests) |
+          | Failed | $($summary.FailedTests) |
+          | Success Rate | $([math]::Round(($summary.PassedTests / $summary.TotalTests) * 100, 2))% |
+
+          ## Test Results by Suite
+
+          $(
+              $results | ForEach-Object {
+                  "### $($_.TestSuite)`n"
+                  "- Duration: $([math]::Round($_.Duration, 2)) seconds`n"
+                  "- Tests: $($_.Summary.Total)`n"
+                  "- Passed: $($_.Summary.Passed)`n"
+                  "- Failed: $($_.Summary.Failed)`n"
+              }
+          )
+          "@ | Out-File -FilePath "TEST_REPORT.md"
+
+          Get-Content "TEST_REPORT.md"
+        shell: pwsh
+
+      - name: Upload test summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-summary
+          path: |
+            test-summary.json
+            TEST_REPORT.md
+
+      - name: Comment on PR (if applicable)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('TEST_REPORT.md', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
