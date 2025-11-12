@@ -67,9 +67,9 @@ jobs:
 
           # Start container with bind mounts so results persist to host
           docker run -d --name audit-test --isolation process `
-            -v "$test:C:\test-results" `
-            -v "$logs:C:\logs" `
-            -v "$trans:C:\pstranscripts" `
+            --mount type=bind,source="$test",target="C:\test-results" `
+            --mount type=bind,source="$logs",target="C:\logs" `
+            --mount type=bind,source="$trans",target="C:\pstranscripts" `
             win-audit-test:latest
 
           if ($LASTEXITCODE -ne 0) {
