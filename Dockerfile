@@ -36,55 +36,9 @@ RUN wevtutil sl Security /ms:67108864; `
     wevtutil sl Application /ms:67108864; `
     wevtutil sl "Microsoft-Windows-PowerShell/Operational" /ms:67108864
 
-# Enable advanced audit policies using subcategories (more reliable than categories)
-# Object Access subcategories
-RUN auditpol /set /subcategory:"File System" /success:enable /failure:enable; `
-    auditpol /set /subcategory:"Registry" /success:enable /failure:enable; `
-    auditpol /set /subcategory:"Kernel Object" /success:enable /failure:enable; `
-    auditpol /set /subcategory:"File Share" /success:enable /failure:enable; `
-    auditpol /set /subcategory:"Detailed File Share" /success:enable /failure:enable; `
-    auditpol /set /subcategory:"Filtering Platform Connection" /success:enable /failure:enable; `
-    auditpol /set /subcategory:"Other Object Access Events" /success:enable /failure:disable; `
-    auditpol /set /subcategory:"Handle Manipulation" /success:enable /failure:enable
-
-# Logon/Logoff subcategories
-RUN auditpol /set /subcategory:"Logon" /success:enable /failure:enable; `
-    auditpol /set /subcategory:"Logoff" /success:enable /failure:disable; `
-    auditpol /set /subcategory:"Account Lockout" /success:enable /failure:enable; `
-    auditpol /set /subcategory:"Special Logon" /success:enable /failure:disable; `
-    auditpol /set /subcategory:"Other Logon/Logoff Events" /success:enable /failure:enable
-
-# Process Tracking subcategories
-RUN auditpol /set /subcategory:"Process Creation" /success:enable /failure:disable; `
-    auditpol /set /subcategory:"Process Termination" /success:enable /failure:disable
-
-# Account Management subcategories
-RUN auditpol /set /subcategory:"User Account Management" /success:enable /failure:enable; `
-    auditpol /set /subcategory:"Computer Account Management" /success:enable /failure:enable; `
-    auditpol /set /subcategory:"Security Group Management" /success:enable /failure:enable; `
-    auditpol /set /subcategory:"Distribution Group Management" /success:enable /failure:enable
-
-# Policy Change subcategories
-RUN auditpol /set /subcategory:"Audit Policy Change" /success:enable /failure:enable; `
-    auditpol /set /subcategory:"Authentication Policy Change" /success:enable /failure:enable; `
-    auditpol /set /subcategory:"Authorization Policy Change" /success:enable /failure:enable
-
-# Privilege Use subcategories
-RUN auditpol /set /subcategory:"Sensitive Privilege Use" /success:enable /failure:disable; `
-    auditpol /set /subcategory:"Non Sensitive Privilege Use" /success:disable /failure:disable
-
-# System subcategories
-RUN auditpol /set /subcategory:"Security State Change" /success:enable /failure:disable; `
-    auditpol /set /subcategory:"Security System Extension" /success:enable /failure:enable; `
-    auditpol /set /subcategory:"System Integrity" /success:enable /failure:enable; `
-    auditpol /set /subcategory:"Other System Events" /success:enable /failure:disable
-
-# Additional important subcategories for MITRE ATT&CK coverage
-RUN auditpol /set /subcategory:"SAM" /success:enable /failure:enable; `
-    auditpol /set /subcategory:"Directory Service Access" /success:enable /failure:enable; `
-    auditpol /set /subcategory:"Directory Service Changes" /success:enable /failure:enable; `
-    auditpol /set /subcategory:"Kerberos Authentication Service" /success:enable /failure:enable; `
-    auditpol /set /subcategory:"Kerberos Service Ticket Operations" /success:enable /failure:enable
+# Note: We do NOT set auditpol at image build time to avoid localization
+# and platform differences causing non-zero exit codes. Audit policies are
+# configured at runtime by scripts/win-audit.ps1 and scripts/SysmonLikeAudit.ps1.
 
 # Enable process command line logging
 RUN reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Audit" /v ProcessCreationIncludeCmdLine_Enabled /t REG_DWORD /d 1 /f

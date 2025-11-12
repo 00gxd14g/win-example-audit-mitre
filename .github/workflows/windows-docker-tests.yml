@@ -38,9 +38,17 @@ jobs:
 
           # Build Docker image
           docker build -t win-audit-test:latest -f Dockerfile .
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ Docker build failed" -ForegroundColor Red
+            exit 1
+          }
 
           # Verify image
           docker images win-audit-test
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ Built image not found" -ForegroundColor Red
+            exit 1
+          }
           Write-Host "✅ Docker image built successfully" -ForegroundColor Green
         shell: pwsh
 
@@ -64,11 +72,20 @@ jobs:
             -v "$trans:C:\pstranscripts" `
             win-audit-test:latest
 
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "❌ Failed to start container" -ForegroundColor Red
+            exit 1
+          }
+
           # Wait for initialization
           Start-Sleep -Seconds 5
 
           # Verify container is running
-          docker ps
+          $running = docker ps --filter "name=audit-test" --format "{{.Names}}"
+          if (-not $running) {
+            Write-Host "❌ Container is not running" -ForegroundColor Red
+            exit 1
+          }
           Write-Host "✅ Container started successfully" -ForegroundColor Green
         shell: pwsh
 
