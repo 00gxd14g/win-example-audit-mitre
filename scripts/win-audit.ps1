@@ -45,6 +45,11 @@ if (Test-Path $loggingModule) {
     Write-Warning "Logging module not found at $loggingModule - continuing without enhanced logging"
 }
 
+# Force UTF-8 output to avoid mojibake (e.g., Turkish characters)
+try { chcp 65001 > $null } catch {}
+try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
+$OutputEncoding = [System.Text.Encoding]::UTF8
+
 Write-Host "`n=== Windows Audit Policy ve Log Ayarlarını Yapılandırma Başlıyor... ===`n"
 
 # 1) Audit Policileri Ayarlama (auditpol komutları)
