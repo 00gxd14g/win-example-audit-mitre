@@ -88,25 +88,25 @@ Write-Host "Audit Policileri güncellendi.`n"
 Write-Host "Process Creation (komut satırı) ve PowerShell log ayarları yapılıyor..."
 
 # Process Creation komut satırını eklemek için:
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Audit" ^
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Audit" `
     /v ProcessCreationIncludeCmdLine_Enabled /t REG_DWORD /d 1 /f
 
 # PowerShell Module Logging
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging" ^
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging" `
     /v EnableModuleLogging /t REG_DWORD /d 1 /f
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging\ModuleNames" ^
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging\ModuleNames" `
     /v "*" /t REG_SZ /d "*" /f
 
 # PowerShell Script Block Logging
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging" ^
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging" `
     /v EnableScriptBlockLogging /t REG_DWORD /d 1 /f
 
 # PowerShell Transcription
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" ^
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" `
     /v EnableInvocationHeader /t REG_DWORD /d 1 /f
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" ^
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" `
     /v EnableTranscripting /t REG_DWORD /d 1 /f
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" ^
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" `
     /v OutputDirectory /t REG_SZ /d "C:\pstranscripts" /f
 
 Write-Host "Process Creation ve PowerShell log ayarları tamamlandı.`n"
