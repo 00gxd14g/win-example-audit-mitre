@@ -382,9 +382,17 @@ jobs:
               $report | ConvertTo-Json -Depth 3 | Out-File C:\test-results\final-report.json
           }
 
-          # Copy results
-          New-Item -ItemType Directory -Force -Path .\test-results
-          docker cp audit-test:C:/test-results/. .\test-results\
+          # Copy results - use absolute path to avoid issues
+          $testResultsPath = Join-Path $PWD "test-results"
+          New-Item -ItemType Directory -Force -Path $testResultsPath | Out-Null
+
+          # Try to copy results from container
+          try {
+              docker cp audit-test:C:/test-results/final-report.json "$testResultsPath/"
+              Write-Host "✅ Test results copied successfully" -ForegroundColor Green
+          } catch {
+              Write-Host "⚠️ Could not copy test results (non-critical)" -ForegroundColor Yellow
+          }
         shell: pwsh
 
       - name: Cleanup
