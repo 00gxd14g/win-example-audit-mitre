@@ -1,0 +1,62 @@
+# Test results and output
+test-results/
+*.json
+!package.json
+!tsconfig.json
+
+# Logs
+logs/
+*.log
+*.evtx
+
+# Synthetic log output
+SyntheticLogs/
+synthetic-*/
+
+# PowerShell transcripts
+pstranscripts/
+
+# Docker artifacts
+*.tar
+*.zip
+
+# Windows system files
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Build artifacts
+bin/
+obj/
+*.dll
+*.exe
+*.msi
+
+# Package manager directories
+node_modules/
+packages/
+
+# Sensitive data
+*.csv
+*.xlsx
+audit_policy_backup.*
+
+# OS-specific
+.Trash-*/
