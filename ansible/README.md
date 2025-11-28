@@ -36,6 +36,52 @@ This directory contains an Ansible playbook to automate the configuration of Win
 2.  **Run the Playbook**:
 
     ```bash
+    ansible-playbook -i inventory.yml site.yml --ask-vault-pass
+    ```
+
+## 🔐 Secure Authentication
+
+Storing passwords in cleartext is a security risk. Here are two better ways to authenticate:
+
+### Method 1: Ansible Vault (Recommended)
+
+Encrypt your password so it can be safely stored in the repository.
+
+1.  **Encrypt your password**:
+    ```bash
+    ansible-vault encrypt_string 'MySecretPassword123!' --name 'vault_password'
+    ```
+
+2.  **Update `inventory.yml`**:
+    Copy the output block into your inventory file's `vars` section:
+    ```yaml
+    vars:
+      ansible_user: Administrator
+      ansible_password: !vault |
+        $ANSIBLE_VAULT;1.1;AES256
+        34353632626231363130333...
+    ```
+
+3.  **Run with Vault Password**:
+    ```bash
+    ansible-playbook -i inventory.yml site.yml --ask-vault-pass
+    ```
+
+### Method 2: OpenSSH for Windows
+
+If your Windows servers have OpenSSH Server installed (available in Windows Server 2019/2022), you can use SSH keys instead of WinRM.
+
+1.  **Configure Inventory**:
+    ```yaml
+    vars:
+      ansible_connection: ssh
+      ansible_shell_type: powershell
+      ansible_user: Administrator
+      # Ensure your public key is in C:\Users\Administrator\.ssh\authorized_keys on the target
+    ```
+
+2.  **Run without passwords**:
+    ```bash
     ansible-playbook -i inventory.yml site.yml
     ```
 

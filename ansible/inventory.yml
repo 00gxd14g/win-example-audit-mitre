@@ -9,7 +9,15 @@ all:
           ansible_host: 192.168.1.100
       vars:
         ansible_user: Administrator
-        ansible_password: YourPasswordHere
+        # SECURITY: Do not store cleartext passwords!
+        # Option 1: Use Ansible Vault (Recommended)
+        # ansible_password: "{{ vault_password }}"
+        
+        # Option 2: Use SSH Key (if OpenSSH is installed)
+        # ansible_connection: ssh
+        # ansible_shell_type: powershell
+        
+        # Default WinRM configuration
         ansible_connection: winrm
         ansible_winrm_server_cert_validation: ignore
         ansible_port: 5986
