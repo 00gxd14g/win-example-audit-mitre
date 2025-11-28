@@ -9,7 +9,7 @@
         state: directory
 
     - name: Configure Audit Policies
-      ansible.windows.win_audit_policy:
+      community.windows.win_audit_policy:
         subcategory: "{{ item }}"
         audit_type: success, failure
       loop:
