@@ -11,6 +11,7 @@ This repository provides comprehensive Windows security auditing scripts, testin
 - **Docker Container Testing**: Isolated Windows containers for reproducible, safe testing
 - **CI/CD Integration**: GitHub Actions workflows for automated testing
 - **Comprehensive Documentation**: Detailed Event ID reference and detection use cases
+- **Wiki**: [Detailed usage guide and documentation](docs/WIKI.md)
 
 ## Repository Structure
 
@@ -514,5 +515,5 @@ For issues, questions, or suggestions:
 
 ---
 
-**Version**: 2.0
-**Last Updated**: 2025-11-11
+**Version**: 2.1.0
+**Last Updated**: 2025-11-28
