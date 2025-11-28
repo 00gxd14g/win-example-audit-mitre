@@ -16,6 +16,7 @@ This repository provides a complete toolkit for configuring, testing, and valida
 *   **🧪 Validation Tools**: Scripts to verify that your audit policies are actually generating the expected logs.
 *   **🤖 Synthetic Data**: Generate realistic attack scenarios (Lateral Movement, Credential Dumping) to test your SIEM.
 *   **🐳 Docker Testing**: Isolated, reproducible testing environment using Windows containers.
+*   **📜 Ansible Support**: Automate deployment across your fleet with the included Ansible playbook.
 
 ## 📂 Repository Structure
 
@@ -27,6 +28,9 @@ win-example-audit-mitre/
 │   ├── Test-EventIDGeneration.ps1 # Validation and testing tool
 │   ├── Generate-SyntheticLogs.ps1 # Synthetic log generator
 │   └── Local-DockerTest.ps1       # Docker helper script
+├── ansible/                       # Ansible automation
+│   ├── site.yml                   # Main playbook
+│   └── inventory.yml              # Example inventory
 ├── docs/
 │   ├── EVENT_IDS.md               # Event ID reference
 │   ├── MITRE_ATTACK_MAPPING.md    # Attack technique mappings

@@ -16,6 +16,7 @@ Bu proje, Windows Güvenlik Denetimi'ni yapılandırmak, test etmek ve doğrulam
 *   **🧪 Doğrulama Araçları**: Denetim politikalarınızın gerçekten beklenen logları üretip üretmediğini doğrulayan test betikleri.
 *   **🤖 Sentetik Veri**: SIEM sisteminizi test etmek için gerçekçi saldırı senaryoları (Yanal Hareket, Kimlik Bilgisi Çalma vb.) üretimi.
 *   **🐳 Docker Testi**: Windows konteynerleri kullanarak izole edilmiş, tekrarlanabilir test ortamı.
+*   **📜 Ansible Desteği**: Dahil edilen Ansible playbook ile dağıtımı tüm filonuzda otomatikleştirin.
 
 ## 📂 Proje Yapısı
 
@@ -27,6 +28,9 @@ win-example-audit-mitre/
 │   ├── Test-EventIDGeneration.ps1 # Doğrulama ve test aracı
 │   ├── Generate-SyntheticLogs.ps1 # Sentetik log üreticisi
 │   └── Local-DockerTest.ps1       # Docker yardımcı betiği
+├── ansible/                       # Ansible otomasyonu
+│   ├── site.yml                   # Ana playbook
+│   └── inventory.yml              # Örnek envanter
 ├── docs/
 │   ├── EVENT_IDS.md               # Olay Kimliği referansı
 │   ├── MITRE_ATTACK_MAPPING.md    # Saldırı tekniği eşleştirmeleri

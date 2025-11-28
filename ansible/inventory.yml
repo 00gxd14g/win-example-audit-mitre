@@ -1,0 +1,16 @@
+# Example Ansible Inventory for Windows Hosts
+# Modify the IP addresses and connection details as needed.
+
+all:
+  children:
+    windows:
+      hosts:
+        windows_server_1:
+          ansible_host: 192.168.1.100
+      vars:
+        ansible_user: Administrator
+        ansible_password: YourPasswordHere
+        ansible_connection: winrm
+        ansible_winrm_server_cert_validation: ignore
+        ansible_port: 5986
+        ansible_winrm_transport: ntlm

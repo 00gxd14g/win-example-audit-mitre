@@ -1,0 +1,106 @@
+---
+- name: Configure Windows Security Auditing (Sysmon-like)
+  hosts: windows
+  gather_facts: no
+  tasks:
+    - name: Create PowerShell Transcription Directory
+      ansible.windows.win_file:
+        path: C:\pstranscripts
+        state: directory
+
+    - name: Configure Audit Policies
+      ansible.windows.win_audit_policy:
+        subcategory: "{{ item }}"
+        audit_type: success, failure
+      loop:
+        - "File System"
+        - "Registry"
+        - "Kernel Object"
+        - "SAM"
+        - "Handle Manipulation"
+        - "Other Object Access Events"
+        - "File Share"
+        - "Detailed File Share"
+        - "Filtering Platform Connection"
+        - "Filtering Platform Packet Drop"
+        - "IPsec Driver"
+        - "Process Creation"
+        - "Process Termination"
+        - "RPC Events"
+        - "System Integrity"
+        - "Logon"
+        - "User Account Management"
+        - "Kerberos Authentication Service"
+        - "Audit Policy Change"
+        - "Security State Change"
+
+    - name: Enable Process Creation Command Line Logging
+      ansible.windows.win_regedit:
+        path: HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Audit
+        name: ProcessCreationIncludeCmdLine_Enabled
+        data: 1
+        type: dword
+
+    - name: Enable PowerShell Module Logging
+      ansible.windows.win_regedit:
+        path: HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging
+        name: EnableModuleLogging
+        data: 1
+        type: dword
+
+    - name: Configure PowerShell Module Logging (All Modules)
+      ansible.windows.win_regedit:
+        path: HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging\ModuleNames
+        name: "*"
+        data: "*"
+        type: string
+
+    - name: Enable PowerShell Script Block Logging
+      ansible.windows.win_regedit:
+        path: HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging
+        name: EnableScriptBlockLogging
+        data: 1
+        type: dword
+
+    - name: Enable PowerShell Transcription
+      ansible.windows.win_regedit:
+        path: HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription
+        name: EnableTranscripting
+        data: 1
+        type: dword
+
+    - name: Configure PowerShell Transcription Output Directory
+      ansible.windows.win_regedit:
+        path: HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription
+        name: OutputDirectory
+        data: "C:\\pstranscripts"
+        type: string
+
+    - name: Enable PowerShell Transcription Invocation Header
+      ansible.windows.win_regedit:
+        path: HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription
+        name: EnableInvocationHeader
+        data: 1
+        type: dword
+
+    - name: Configure Event Log Sizes (Security, System, Application)
+      ansible.windows.win_regedit:
+        path: "HKLM:\\SYSTEM\\CurrentControlSet\\Services\\EventLog\\{{ item }}"
+        name: MaxSize
+        data: 33554432
+        type: dword
+      loop:
+        - Security
+        - System
+        - Application
+
+    - name: Configure Event Log Retention (Overwrite as needed)
+      ansible.windows.win_regedit:
+        path: "HKLM:\\SYSTEM\\CurrentControlSet\\Services\\EventLog\\{{ item }}"
+        name: Retention
+        data: 0
+        type: dword
+      loop:
+        - Security
+        - System
+        - Application
