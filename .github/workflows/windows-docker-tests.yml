@@ -70,8 +70,8 @@ jobs:
         run: |
           Write-Host "Starting Audit Configuration Tests..." -ForegroundColor Cyan
           docker run --rm --name audit-test-container `
-            -v ${PWD}/scripts:C:\workspace\scripts `
-            -v ${PWD}/test-results:C:\test-results `
+            -v "${PWD}\scripts:C:\workspace\scripts" `
+            -v "${PWD}\test-results:C:\test-results" `
             win-audit-test:latest `
             powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite AuditConfig -OutputFormat JSON -Verbose
         shell: pwsh
@@ -82,8 +82,8 @@ jobs:
         run: |
           Write-Host "Starting Event Generation Tests..." -ForegroundColor Cyan
           docker run --rm --name event-test-container `
-            -v ${PWD}/scripts:C:\workspace\scripts `
-            -v ${PWD}/test-results:C:\test-results `
+            -v "${PWD}\scripts:C:\workspace\scripts" `
+            -v "${PWD}\test-results:C:\test-results" `
             win-audit-test:latest `
             powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite EventGeneration -OutputFormat JSON -Verbose
         shell: pwsh
@@ -94,8 +94,8 @@ jobs:
         run: |
           Write-Host "Starting Synthetic Log Generation Tests..." -ForegroundColor Cyan
           docker run --rm --name synthetic-test-container `
-            -v ${PWD}/scripts:C:\workspace\scripts `
-            -v ${PWD}/test-results:C:\test-results `
+            -v "${PWD}\scripts:C:\workspace\scripts" `
+            -v "${PWD}\test-results:C:\test-results" `
             win-audit-test:latest `
             powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite Synthetic -OutputFormat JSON -Verbose
         shell: pwsh
@@ -108,8 +108,8 @@ jobs:
           # Integration tests might need a persistent container or specific isolation
           docker run --rm --name integration-test-container `
             --isolation process `
-            -v ${PWD}/scripts:C:\workspace\scripts `
-            -v ${PWD}/test-results:C:\test-results `
+            -v "${PWD}\scripts:C:\workspace\scripts" `
+            -v "${PWD}\test-results:C:\test-results" `
             win-audit-test:latest `
             powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite Integration -OutputFormat JSON -Verbose
         shell: pwsh
