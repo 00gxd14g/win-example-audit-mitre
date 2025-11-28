@@ -224,8 +224,6 @@ function Stop-Container {
     if (Test-ContainerRunning) {
         Write-Host "Stopping container: $ContainerName" -ForegroundColor Yellow
         docker stop $ContainerName
-
-        Write-Host "✓ Container stopped" -ForegroundColor Green
     } else {
         Write-Host "Container is not running" -ForegroundColor Yellow
     }

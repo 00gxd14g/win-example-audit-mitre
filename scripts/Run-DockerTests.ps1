@@ -1,22 +1,22 @@
 <#
 .SYNOPSIS
-    Runs comprehensive audit testing in Docker container environment
+    Orchestrates the execution of Windows audit tests within a Docker container.
 
 .DESCRIPTION
-    This script orchestrates all testing operations for Windows Event Log auditing
-    in a Docker container. It validates audit configurations, generates test events,
-    verifies event logging, and produces detailed test reports.
+    This script is the main entry point for running tests inside the Docker container.
+    It executes various test suites (AuditConfig, EventGeneration, Synthetic, Integration)
+    and collects results in a unified format.
 
 .PARAMETER TestSuite
     Specifies which test suite to run:
-    - All: Run all tests (default)
-    - AuditConfig: Only test audit policy configuration
-    - EventGeneration: Only test event generation
-    - Synthetic: Generate synthetic attack logs
-    - Integration: Full end-to-end integration tests
+    - All: Run all test suites
+    - AuditConfig: Check audit policy and registry settings
+    - EventGeneration: Verify event generation capabilities
+    - Synthetic: Generate synthetic logs for testing
+    - Integration: Run end-to-end integration tests
 
 .PARAMETER OutputFormat
-    Output format for test results: JSON, CSV, XML, or Console (default: JSON)
+    Format for test results: JSON, CSV, XML, or Console (default: JSON)
 
 .PARAMETER ExportPath
     Path to export test results (default: C:\test-results)
@@ -40,27 +40,21 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet('All', 'AuditConfig', 'EventGeneration', 'Synthetic', 'Integration')]
     [string]$TestSuite = 'All',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet('JSON', 'CSV', 'XML', 'Console')]
     [string]$OutputFormat = 'JSON',
 
-    [Parameter(Mandatory=$false)]
-    [string]$ExportPath = 'C:\test-results',
-
-    [Parameter(Mandatory=$false)]
-    [switch]$Verbose
+    [Parameter(Mandatory = $false)]
+    [string]$ExportPath = 'C:\test-results'
 )
 
 # Set error action preference
 $ErrorActionPreference = 'Continue'
 $OriginalVerbosePreference = $VerbosePreference
-if ($Verbose) {
-    $VerbosePreference = 'Continue'
-}
 
 # Script configuration
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -69,20 +63,20 @@ $TestStartTime = Get-Date
 
 # Test results collection
 $TestResults = @{
-    TestSuite = $TestSuite
-    StartTime = $TestStartTime
+    TestSuite   = $TestSuite
+    StartTime   = $TestStartTime
     Environment = @{
-        Hostname = $env:COMPUTERNAME
-        OSVersion = [System.Environment]::OSVersion.VersionString
+        Hostname          = $env:COMPUTERNAME
+        OSVersion         = [System.Environment]::OSVersion.VersionString
         PowerShellVersion = $PSVersionTable.PSVersion.ToString()
-        IsContainer = (Test-Path 'C:\.containerenv' -ErrorAction SilentlyContinue)
-        IsAdministrator = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+        IsContainer       = (Test-Path 'C:\.containerenv' -ErrorAction SilentlyContinue)
+        IsAdministrator   = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
     }
-    Tests = @()
-    Summary = @{
-        Total = 0
-        Passed = 0
-        Failed = 0
+    Tests       = @()
+    Summary     = @{
+        Total   = 0
+        Passed  = 0
+        Failed  = 0
         Skipped = 0
     }
 }
@@ -104,10 +98,10 @@ function Write-TestResult {
     )
 
     $result = @{
-        TestName = $TestName
-        Passed = $Passed
-        Message = $Message
-        Details = $Details
+        TestName  = $TestName
+        Passed    = $Passed
+        Message   = $Message
+        Details   = $Details
         Timestamp = Get-Date
     }
 
@@ -117,7 +111,8 @@ function Write-TestResult {
     if ($Passed) {
         $TestResults.Summary.Passed++
         Write-Host "  [PASS] $TestName" -ForegroundColor Green
-    } else {
+    }
+    else {
         $TestResults.Summary.Failed++
         Write-Host "  [FAIL] $TestName" -ForegroundColor Red
     }
@@ -139,7 +134,8 @@ function Test-AuditConfiguration {
         $eventLogService = Get-Service -Name EventLog -ErrorAction Stop
         $servicePassed = $eventLogService.Status -eq 'Running'
         Write-TestResult -TestName "Event Log Service Status" -Passed $servicePassed -Message "Service status: $($eventLogService.Status)"
-    } catch {
+    }
+    catch {
         Write-TestResult -TestName "Event Log Service Status" -Passed $false -Message "Error: $_"
     }
 
@@ -158,8 +154,9 @@ function Test-AuditConfiguration {
         try {
             $auditOutput = auditpol /get /category:"$category" 2>&1
             $hasSuccess = $auditOutput -match 'Success'
-            Write-TestResult -TestName "Audit Policy: $category" -Passed $hasSuccess -Message $(if($hasSuccess){"Enabled"}else{"Not configured"})
-        } catch {
+            Write-TestResult -TestName "Audit Policy: $category" -Passed $hasSuccess -Message $(if ($hasSuccess) { "Enabled" }else { "Not configured" })
+        }
+        catch {
             Write-TestResult -TestName "Audit Policy: $category" -Passed $false -Message "Error checking policy"
         }
     }
@@ -167,28 +164,28 @@ function Test-AuditConfiguration {
     # Test 4: Registry configurations
     $registryTests = @(
         @{
-            Path = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Audit'
-            Name = 'ProcessCreationIncludeCmdLine_Enabled'
+            Path          = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Audit'
+            Name          = 'ProcessCreationIncludeCmdLine_Enabled'
             ExpectedValue = 1
-            Description = 'Process Command Line Logging'
+            Description   = 'Process Command Line Logging'
         },
         @{
-            Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging'
-            Name = 'EnableModuleLogging'
+            Path          = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging'
+            Name          = 'EnableModuleLogging'
             ExpectedValue = 1
-            Description = 'PowerShell Module Logging'
+            Description   = 'PowerShell Module Logging'
         },
         @{
-            Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging'
-            Name = 'EnableScriptBlockLogging'
+            Path          = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging'
+            Name          = 'EnableScriptBlockLogging'
             ExpectedValue = 1
-            Description = 'PowerShell Script Block Logging'
+            Description   = 'PowerShell Script Block Logging'
         },
         @{
-            Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription'
-            Name = 'EnableTranscripting'
+            Path          = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription'
+            Name          = 'EnableTranscripting'
             ExpectedValue = 1
-            Description = 'PowerShell Transcription'
+            Description   = 'PowerShell Transcription'
         }
     )
 
@@ -199,10 +196,12 @@ function Test-AuditConfiguration {
                 $actualValue = $value.$($test.Name)
                 $passed = $actualValue -eq $test.ExpectedValue
                 Write-TestResult -TestName "Registry: $($test.Description)" -Passed $passed -Message "Value: $actualValue (Expected: $($test.ExpectedValue))"
-            } else {
+            }
+            else {
                 Write-TestResult -TestName "Registry: $($test.Description)" -Passed $false -Message "Registry path not found"
             }
-        } catch {
+        }
+        catch {
             Write-TestResult -TestName "Registry: $($test.Description)" -Passed $false -Message "Error reading registry: $_"
         }
     }
@@ -219,10 +218,12 @@ function Test-EventGeneration {
             Write-Host "  Running Test-EventIDGeneration.ps1..." -ForegroundColor Yellow
             $result = & $testScript -TestEventGeneration -DetailedReport -ExportResults -ExportPath $ExportPath
             Write-TestResult -TestName "Event Generation Script Execution" -Passed $true -Message "Script executed successfully"
-        } catch {
+        }
+        catch {
             Write-TestResult -TestName "Event Generation Script Execution" -Passed $false -Message "Error: $_"
         }
-    } else {
+    }
+    else {
         Write-TestResult -TestName "Event Generation Script Execution" -Passed $false -Message "Test-EventIDGeneration.ps1 not found"
     }
 }
@@ -244,12 +245,14 @@ function Test-SyntheticLogs {
 
                 # Verify output was created
                 $passed = Test-Path $outputPath
-                Write-TestResult -TestName "Synthetic Logs: $scenario" -Passed $passed -Message $(if($passed){"Generated at $outputPath"}else{"Output not created"})
-            } catch {
+                Write-TestResult -TestName "Synthetic Logs: $scenario" -Passed $passed -Message $(if ($passed) { "Generated at $outputPath" }else { "Output not created" })
+            }
+            catch {
                 Write-TestResult -TestName "Synthetic Logs: $scenario" -Passed $false -Message "Error: $_"
             }
         }
-    } else {
+    }
+    else {
         Write-TestResult -TestName "Synthetic Log Generation" -Passed $false -Message "Generate-SyntheticLogs.ps1 not found"
     }
 }
@@ -269,7 +272,8 @@ function Test-Integration {
             $auditOutput = auditpol /get /category:* 2>&1
             $passed = $auditOutput -match 'Success'
             Write-TestResult -TestName "Apply Audit Configuration" -Passed $passed -Message "Configuration applied"
-        } catch {
+        }
+        catch {
             Write-TestResult -TestName "Apply Audit Configuration" -Passed $false -Message "Error: $_"
         }
     }
@@ -283,12 +287,13 @@ function Test-Integration {
         # Query for recent 4688 events
         $events = Get-WinEvent -FilterHashtable @{
             LogName = 'Security'
-            ID = 4688
+            ID      = 4688
         } -MaxEvents 10 -ErrorAction Stop
 
         $passed = $events.Count -gt 0
         Write-TestResult -TestName "End-to-End Event Logging" -Passed $passed -Message "Found $($events.Count) process creation events"
-    } catch {
+    }
+    catch {
         Write-TestResult -TestName "End-to-End Event Logging" -Passed $false -Message "Error querying events: $_"
     }
 
@@ -300,12 +305,13 @@ function Test-Integration {
 
         $psEvents = Get-WinEvent -FilterHashtable @{
             LogName = 'Microsoft-Windows-PowerShell/Operational'
-            ID = 4104
+            ID      = 4104
         } -MaxEvents 5 -ErrorAction Stop
 
         $passed = $psEvents.Count -gt 0
         Write-TestResult -TestName "PowerShell Script Block Logging" -Passed $passed -Message "Found $($psEvents.Count) script block events"
-    } catch {
+    }
+    catch {
         Write-TestResult -TestName "PowerShell Script Block Logging" -Passed $false -Message "No PowerShell events found or error: $_"
     }
 }
@@ -354,7 +360,7 @@ try {
     Write-Host "╚════════════════════════════════════════════╝" -ForegroundColor Cyan
     Write-Host "  Total Tests:   $($TestResults.Summary.Total)" -ForegroundColor White
     Write-Host "  Passed:        $($TestResults.Summary.Passed)" -ForegroundColor Green
-    Write-Host "  Failed:        $($TestResults.Summary.Failed)" -ForegroundColor $(if($TestResults.Summary.Failed -gt 0){'Red'}else{'Green'})
+    Write-Host "  Failed:        $($TestResults.Summary.Failed)" -ForegroundColor $(if ($TestResults.Summary.Failed -gt 0) { 'Red' }else { 'Green' })
     Write-Host "  Duration:      $([math]::Round($TestResults.Duration, 2)) seconds" -ForegroundColor White
     Write-Host ""
 
@@ -382,10 +388,12 @@ try {
     $exitCode = if ($TestResults.Summary.Failed -gt 0) { 1 } else { 0 }
     exit $exitCode
 
-} catch {
+}
+catch {
     Write-Host "`nFATAL ERROR: $_" -ForegroundColor Red
     Write-Host $_.ScriptStackTrace -ForegroundColor Red
     exit 1
-} finally {
+}
+finally {
     $VerbosePreference = $OriginalVerbosePreference
 }

