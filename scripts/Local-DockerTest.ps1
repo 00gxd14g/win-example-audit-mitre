@@ -89,7 +89,7 @@ function Test-ContainerRunning {
     return $container -eq $ContainerName
 }
 
-function Build-DockerImage {
+function New-DockerImage {
     Write-Header "Building Docker Image"
 
     Push-Location $ProjectRoot
@@ -183,7 +183,7 @@ function Invoke-Tests {
     docker exec $ContainerName powershell -File C:\workspace\scripts\Run-DockerTests.ps1 `
         -TestSuite $TestSuite `
         -OutputFormat JSON `
-        -Verbose
+        -OutputFormat JSON
 
     # Copy results to host
     Write-Host "`nCopying test results to host..." -ForegroundColor Yellow
@@ -282,7 +282,7 @@ try {
     # Execute requested action
     switch ($Action) {
         'Build' {
-            Build-DockerImage
+            New-DockerImage
         }
         'Run' {
             Start-Container
@@ -303,7 +303,7 @@ try {
             Remove-Everything
         }
         'All' {
-            Build-DockerImage
+            New-DockerImage
             Start-Container
             Invoke-Tests
         }

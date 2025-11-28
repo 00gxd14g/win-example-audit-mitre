@@ -73,7 +73,7 @@ jobs:
             -v "${PWD}\scripts:C:\workspace\scripts" `
             -v "${PWD}\test-results:C:\test-results" `
             win-audit-test:latest `
-            powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite AuditConfig -OutputFormat JSON -Verbose
+            powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite AuditConfig -OutputFormat JSON
         shell: pwsh
 
       # Run Event Generation Tests
@@ -86,7 +86,7 @@ jobs:
             -v "${PWD}\scripts:C:\workspace\scripts" `
             -v "${PWD}\test-results:C:\test-results" `
             win-audit-test:latest `
-            powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite EventGeneration -OutputFormat JSON -Verbose
+            powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite EventGeneration -OutputFormat JSON
         shell: pwsh
 
       # Run Synthetic Log Generation Tests
@@ -98,7 +98,7 @@ jobs:
             -v "${PWD}\scripts:C:\workspace\scripts" `
             -v "${PWD}\test-results:C:\test-results" `
             win-audit-test:latest `
-            powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite Synthetic -OutputFormat JSON -Verbose
+            powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite Synthetic -OutputFormat JSON
         shell: pwsh
 
       # Run Integration Tests
@@ -113,7 +113,7 @@ jobs:
             -v "${PWD}\scripts:C:\workspace\scripts" `
             -v "${PWD}\test-results:C:\test-results" `
             win-audit-test:latest `
-            powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite Integration -OutputFormat JSON -Verbose
+            powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite Integration -OutputFormat JSON
         shell: pwsh
 
       # Generate Report
