@@ -166,9 +166,36 @@ Bu komut:
 3. Tüm test paketlerini çalıştırır.
 4. Sonuçları `test-results` klasörüne kopyalar.
 
----
-
-## Sorun Giderme
+116: 
+117: ---
+118: 
+119: ## Ansible ile Otomasyon
+120: 
+121: Bu proje, denetim politikalarını birden fazla sunucuya hızlı ve standart bir şekilde dağıtmak için bir Ansible Playbook içerir.
+122: 
+123: ### Ön Gereksinimler
+124: 
+125: *   **Ansible Kontrol Makinesi**: Linux veya macOS (Windows üzerinde WSL kullanılabilir).
+126: *   **Hedef Makineler**: WinRM servisi etkinleştirilmiş Windows sunucular.
+127: 
+128: ### Kullanım
+129: 
+130: 1.  `ansible/inventory.yml` dosyasını düzenleyin ve hedef sunucularınızı ekleyin.
+131: 2.  Playbook'u çalıştırın:
+132: 
+133:     ```bash
+134:     ansible-playbook -i ansible/inventory.yml ansible/site.yml --ask-vault-pass
+135:     ```
+136: 
+137: ### Ne Yapar?
+138: 
+139: Bu playbook (`site.yml`), `SysmonLikeAudit.ps1` betiğinin yaptığı işlemleri otomatikleştirir:
+140: *   Gerekli klasörleri oluşturur (`C:\pstranscripts`).
+141: *   Gelişmiş denetim politikalarını (Process Creation, Object Access vb.) ayarlar.
+142: *   Registry üzerinden PowerShell loglamayı ve komut satırı izlemeyi etkinleştirir.
+143: *   Event Log boyutlarını ve saklama politikalarını yapılandırır.
+144: 
+145: ---
 
 ### Olaylar Oluşmuyor
 

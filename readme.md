@@ -105,6 +105,20 @@ Don't want to mess with your host machine? Use our Docker environment!
 
 This will spin up a Windows Server Core container, apply the audit policies, run the validation suite, and give you a report—all without touching your local registry.
 
+## 📜 Ansible Automation
+
+Scale your security configuration across your entire fleet using our Ansible playbook.
+
+```bash
+# 1. Update inventory
+nano ansible/inventory.yml
+
+# 2. Run playbook
+ansible-playbook -i ansible/inventory.yml ansible/site.yml --ask-vault-pass
+```
+
+This playbook replicates the comprehensive `SysmonLikeAudit` configuration, ensuring consistent security posture across all your Windows servers. See [ansible/README.md](ansible/README.md) for details.
+
 ## 📚 Documentation
 
 *   **[Wiki](docs/WIKI.md)**: The central hub for all documentation.

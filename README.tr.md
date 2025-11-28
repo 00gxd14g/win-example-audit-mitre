@@ -105,6 +105,20 @@ Ana makinenizin ayarlarını değiştirmek istemiyor musunuz? Docker ortamımız
 
 Bu komut, bir Windows Server Core konteyneri ayağa kaldırır, denetim politikalarını uygular, doğrulama testlerini çalıştırır ve size bir rapor sunar; üstelik yerel kayıt defterinize (registry) dokunmadan.
 
+## 📜 Ansible Otomasyonu
+
+Ansible playbook'umuzu kullanarak güvenlik yapılandırmanızı tüm sunucu filonuza ölçeklendirin.
+
+```bash
+# 1. Envanteri güncelleyin
+nano ansible/inventory.yml
+
+# 2. Playbook'u çalıştırın
+ansible-playbook -i ansible/inventory.yml ansible/site.yml --ask-vault-pass
+```
+
+Bu playbook, kapsamlı `SysmonLikeAudit` yapılandırmasını birebir uygulayarak tüm Windows sunucularınızda tutarlı bir güvenlik duruşu sağlar. Detaylar için [ansible/README.md](ansible/README.md) dosyasına bakın.
+
 ## 📚 Dokümantasyon
 
 *   **[Wiki](docs/WIKI.md)**: Tüm dokümantasyonun merkezi.

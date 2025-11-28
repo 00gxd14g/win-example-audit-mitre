@@ -1,0 +1,25 @@
+name: Ansible Lint
+
+on:
+  push:
+    paths:
+      - 'ansible/**'
+  pull_request:
+    paths:
+      - 'ansible/**'
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ansible Lint
+        run: pip3 install ansible-lint
+
+      - name: Install Ansible Collections
+        run: ansible-galaxy collection install ansible.windows community.windows
+
+      - name: Run Ansible Lint
+        run: ansible-lint ansible/site.yml
