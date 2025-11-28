@@ -42,6 +42,58 @@ Bu proje, güvenlik ekiplerinin Windows ortamlarında görünürlüğü artırma
 3. `scripts` dizinine gidin.
 4. `SysmonLikeAudit.ps1` (kapsamlı) veya `win-audit.ps1` (MITRE odaklı) komut dosyasını çalıştırın.
 
+### Windows Cihazda Kullanım
+
+Bu projeyi kendi Windows cihazınızda (veya bir sanal makinede) kullanmak için aşağıdaki adımları takip edebilirsiniz.
+
+#### 1. Hazırlık
+
+Öncelikle, PowerShell'i **Yönetici Olarak** çalıştırdığınızdan emin olun. Betiklerin çalışabilmesi için Execution Policy ayarını geçici olarak değiştirmeniz gerekebilir:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+```
+
+#### 2. Denetim Politikalarını Uygulama
+
+Sisteminizde hangi olayların loglanacağını belirlemek için denetim politikalarını yapılandırmanız gerekir. İki seçeneğiniz vardır:
+
+*   **Kapsamlı Denetim (Önerilen):** `SysmonLikeAudit.ps1` betiği, Sysmon benzeri detaylı bir denetim yapılandırması sağlar. İşlem sonlandırma, RPC olayları ve sistem bütünlüğü gibi gelişmiş kategorileri kapsar.
+
+    ```powershell
+    .\scripts\SysmonLikeAudit.ps1
+    ```
+
+*   **MITRE Odaklı Denetim:** `win-audit.ps1` betiği, özellikle MITRE ATT&CK tekniklerini tespit etmeye odaklanan daha spesifik bir yapılandırma sunar.
+
+    ```powershell
+    .\scripts\win-audit.ps1
+    ```
+
+#### 3. Yapılandırmayı Doğrulama
+
+Politikaları uyguladıktan sonra, sistemin beklenen olayları üretip üretmediğini test etmelisiniz. `Test-EventIDGeneration.ps1` betiği, çeşitli eylemleri simüle ederek (örneğin bir işlem başlatıp sonlandırma) ilgili Windows Olay Günlüklerinin (Event Logs) oluşup oluşmadığını kontrol eder.
+
+```powershell
+.\scripts\Test-EventIDGeneration.ps1 -TestEventGeneration -DetailedReport
+```
+
+Bu komutun çıktısında tüm testlerin `[PASS]` (Başarılı) olarak işaretlendiğini görmelisiniz.
+
+#### 4. Sentetik Log Üretimi (Opsiyonel)
+
+Eğer bir SIEM ürününü veya log toplama sistemini test ediyorsanız, gerçek bir saldırı yapmadan yapay saldırı logları üretmek isteyebilirsiniz. `Generate-SyntheticLogs.ps1` betiği bu işe yarar.
+
+```powershell
+# Yanal Hareket (Lateral Movement) senaryosu için log üret:
+.\scripts\Generate-SyntheticLogs.ps1 -Scenario LateralMovement
+
+# Tüm senaryolar için log üret:
+.\scripts\Generate-SyntheticLogs.ps1 -Scenario All
+```
+
+Bu işlem, sisteminizde gerçek bir saldırı yapmaz, sadece Event Log'a sanki saldırı olmuş gibi kayıtlar ekler.
+
 ---
 
 ## Kullanım Kılavuzları
