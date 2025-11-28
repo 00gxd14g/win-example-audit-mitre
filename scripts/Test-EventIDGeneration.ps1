@@ -49,12 +49,12 @@ param(
 
 # Initialize results
 $script:TestResults = @{
-    Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    ComputerName = $env:COMPUTERNAME
-    AuditPolicyTests = @{}
-    RegistryTests = @{}
+    Timestamp            = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    ComputerName         = $env:COMPUTERNAME
+    AuditPolicyTests     = @{}
+    RegistryTests        = @{}
     EventGenerationTests = @{}
-    Coverage = @{}
+    Coverage             = @{}
 }
 
 Write-Host "`n========================================" -ForegroundColor Cyan
@@ -78,7 +78,8 @@ function Write-TestResult {
     $status = if ($Passed) {
         Write-Host "  [PASS]" -ForegroundColor Green -NoNewline
         "PASS"
-    } else {
+    }
+    else {
         Write-Host "  [FAIL]" -ForegroundColor Red -NoNewline
         "FAIL"
     }
@@ -86,14 +87,15 @@ function Write-TestResult {
     Write-Host " $Test" -NoNewline
     if ($Details -and $DetailedReport) {
         Write-Host " - $Details" -ForegroundColor Gray
-    } else {
+    }
+    else {
         Write-Host ""
     }
 
     return @{
-        Test = $Test
-        Status = $status
-        Details = $Details
+        Test      = $Test
+        Status    = $status
+        Details   = $Details
         Timestamp = Get-Date -Format "HH:mm:ss"
     }
 }
@@ -105,11 +107,14 @@ function Get-AuditPolSubcategory {
 
     if ($output -match "Success and Failure") {
         return "Success and Failure"
-    } elseif ($output -match "Success") {
+    }
+    elseif ($output -match "Success") {
         return "Success"
-    } elseif ($output -match "Failure") {
+    }
+    elseif ($output -match "Failure") {
         return "Failure"
-    } else {
+    }
+    else {
         return "Not Configured"
     }
 }
@@ -124,7 +129,8 @@ function Test-RegistryValue {
     try {
         $actualValue = Get-ItemProperty -Path $Path -Name $Name -ErrorAction Stop | Select-Object -ExpandProperty $Name
         return $actualValue -eq $ExpectedValue
-    } catch {
+    }
+    catch {
         return $false
     }
 }
@@ -140,13 +146,14 @@ function Get-RecentEvents {
 
     try {
         $filter = @{
-            LogName = $LogName
-            ID = $EventIDs
+            LogName   = $LogName
+            ID        = $EventIDs
             StartTime = $startTime
         }
 
         return Get-WinEvent -FilterHashtable $filter -ErrorAction SilentlyContinue
-    } catch {
+    }
+    catch {
         return $null
     }
 }
@@ -158,28 +165,31 @@ function Get-RecentEvents {
 Write-TestHeader "Testing Audit Policy Configuration"
 
 $auditCategories = @{
-    "Logon" = @{Expected = "Success and Failure"; Critical = $true}
-    "Process Creation" = @{Expected = "Success"; Critical = $true}
-    "User Account Management" = @{Expected = "Success and Failure"; Critical = $true}
-    "File System" = @{Expected = "Success and Failure"; Critical = $false}
-    "Registry" = @{Expected = "Success and Failure"; Critical = $false}
-    "Kernel Object" = @{Expected = "Success"; Critical = $false}
-    "SAM" = @{Expected = "Success and Failure"; Critical = $true}
-    "File Share" = @{Expected = "Success and Failure"; Critical = $true}
-    "Detailed File Share" = @{Expected = "Success and Failure"; Critical = $true}
-    "Audit Policy Change" = @{Expected = "Success and Failure"; Critical = $true}
-    "Kerberos Authentication Service" = @{Expected = "Success and Failure"; Critical = $true}
-    "Handle Manipulation" = @{Expected = "Success and Failure"; Critical = $false}
-    "Security State Change" = @{Expected = "Success"; Critical = $false}
-    "Other Object Access Events" = @{Expected = "Success"; Critical = $false}
-    "Filtering Platform Connection" = @{Expected = "Success and Failure"; Critical = $false}
+    "Logon"                           = @{Expected = "Success and Failure"; Critical = $true }
+    "Process Creation"                = @{Expected = "Success"; Critical = $true }
+    "User Account Management"         = @{Expected = "Success and Failure"; Critical = $true }
+    "File System"                     = @{Expected = "Success and Failure"; Critical = $false }
+    "Registry"                        = @{Expected = "Success and Failure"; Critical = $false }
+    "Kernel Object"                   = @{Expected = "Success"; Critical = $false }
+    "SAM"                             = @{Expected = "Success and Failure"; Critical = $true }
+    "File Share"                      = @{Expected = "Success and Failure"; Critical = $true }
+    "Detailed File Share"             = @{Expected = "Success and Failure"; Critical = $true }
+    "Audit Policy Change"             = @{Expected = "Success and Failure"; Critical = $true }
+    "Kerberos Authentication Service" = @{Expected = "Success and Failure"; Critical = $true }
+    "Handle Manipulation"             = @{Expected = "Success and Failure"; Critical = $false }
+    "Security State Change"           = @{Expected = "Success"; Critical = $false }
+    "Other Object Access Events"      = @{Expected = "Success"; Critical = $false }
+    "Filtering Platform Connection"   = @{Expected = "Success and Failure"; Critical = $false }
+    "Process Termination"             = @{Expected = "Success"; Critical = $false }
+    "RPC Events"                      = @{Expected = "Success"; Critical = $false }
+    "System Integrity"                = @{Expected = "Success"; Critical = $true }
 }
 
 foreach ($category in $auditCategories.Keys) {
     $config = $auditCategories[$category]
     $currentSetting = Get-AuditPolSubcategory -Subcategory $category
     $passed = $currentSetting -like "*$($config.Expected)*" -or
-              $currentSetting -eq "Success and Failure"
+    $currentSetting -eq "Success and Failure"
 
     $result = Write-TestResult -Test $category -Passed $passed -Details "Current: $currentSetting | Expected: $($config.Expected)"
     $script:TestResults.AuditPolicyTests[$category] = $result
@@ -192,24 +202,24 @@ foreach ($category in $auditCategories.Keys) {
 Write-TestHeader "Testing Registry Configuration"
 
 $registryTests = @{
-    "Process Creation Command Line" = @{
-        Path = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Audit"
-        Name = "ProcessCreationIncludeCmdLine_Enabled"
+    "Process Creation Command Line"   = @{
+        Path          = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Audit"
+        Name          = "ProcessCreationIncludeCmdLine_Enabled"
         ExpectedValue = 1
     }
-    "PowerShell Module Logging" = @{
-        Path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging"
-        Name = "EnableModuleLogging"
+    "PowerShell Module Logging"       = @{
+        Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging"
+        Name          = "EnableModuleLogging"
         ExpectedValue = 1
     }
     "PowerShell Script Block Logging" = @{
-        Path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging"
-        Name = "EnableScriptBlockLogging"
+        Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging"
+        Name          = "EnableScriptBlockLogging"
         ExpectedValue = 1
     }
-    "PowerShell Transcription" = @{
-        Path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription"
-        Name = "EnableTranscripting"
+    "PowerShell Transcription"        = @{
+        Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription"
+        Name          = "EnableTranscripting"
         ExpectedValue = 1
     }
 }
@@ -232,13 +242,14 @@ if ($TestEventGeneration) {
     # Array to track what events we're testing
     $eventTests = @()
 
-    # Test 1: Process Creation (Event ID 4688)
-    Write-Host "`n  [*] Testing Process Creation (Event ID 4688)..." -ForegroundColor Cyan
+    # Test 1: Process Creation (Event ID 4688) & Termination (4689)
+    Write-Host "`n  [*] Testing Process Creation (4688) & Termination (4689)..." -ForegroundColor Cyan
     $tempScript = "$env:TEMP\test_process_$((Get-Date).Ticks).bat"
     "@echo off`necho Test Process" | Out-File -FilePath $tempScript -Encoding ASCII
     Start-Process -FilePath "cmd.exe" -ArgumentList "/c $tempScript" -Wait -WindowStyle Hidden
     Remove-Item $tempScript -Force -ErrorAction SilentlyContinue
-    $eventTests += @{EventID = 4688; LogName = "Security"; Description = "Process Creation"}
+    $eventTests += @{EventID = 4688; LogName = "Security"; Description = "Process Creation" }
+    $eventTests += @{EventID = 4689; LogName = "Security"; Description = "Process Termination" }
 
     # Test 2: Registry Modification (Event ID 4657)
     Write-Host "  [*] Testing Registry Modification (Event ID 4657)..." -ForegroundColor Cyan
@@ -246,7 +257,7 @@ if ($TestEventGeneration) {
     New-Item -Path $testRegPath -Force | Out-Null
     Set-ItemProperty -Path $testRegPath -Name "TestValue" -Value "TestData"
     Remove-Item -Path $testRegPath -Force -ErrorAction SilentlyContinue
-    $eventTests += @{EventID = 4657; LogName = "Security"; Description = "Registry Modification"}
+    $eventTests += @{EventID = 4657; LogName = "Security"; Description = "Registry Modification" }
 
     # Test 3: File Access (Event ID 4663)
     Write-Host "  [*] Testing File Access (Event ID 4663)..." -ForegroundColor Cyan
@@ -254,18 +265,18 @@ if ($TestEventGeneration) {
     "Test Content" | Out-File -FilePath $testFile
     Get-Content $testFile | Out-Null
     Remove-Item $testFile -Force -ErrorAction SilentlyContinue
-    $eventTests += @{EventID = 4663; LogName = "Security"; Description = "File Access"}
+    $eventTests += @{EventID = 4663; LogName = "Security"; Description = "File Access" }
 
     # Test 4: PowerShell Script Block (Event ID 4104)
     Write-Host "  [*] Testing PowerShell Script Block Logging (Event ID 4104)..." -ForegroundColor Cyan
     $testCommand = "Write-Host 'EventID Test: PowerShell Script Block Logging'"
     Invoke-Expression $testCommand
-    $eventTests += @{EventID = 4104; LogName = "Microsoft-Windows-PowerShell/Operational"; Description = "PowerShell Script Block"}
+    $eventTests += @{EventID = 4104; LogName = "Microsoft-Windows-PowerShell/Operational"; Description = "PowerShell Script Block" }
 
     # Test 5: PowerShell Module Logging (Event ID 4103)
     Write-Host "  [*] Testing PowerShell Module Logging (Event ID 4103)..." -ForegroundColor Cyan
     Get-Date | Out-Null
-    $eventTests += @{EventID = 4103; LogName = "Microsoft-Windows-PowerShell/Operational"; Description = "PowerShell Module Logging"}
+    $eventTests += @{EventID = 4103; LogName = "Microsoft-Windows-PowerShell/Operational"; Description = "PowerShell Module Logging" }
 
     # Test 6: Scheduled Task (Event ID 4698) - requires admin
     Write-Host "  [*] Testing Scheduled Task Creation (Event ID 4698)..." -ForegroundColor Cyan
@@ -275,8 +286,9 @@ if ($TestEventGeneration) {
     try {
         Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Force | Out-Null
         Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
-        $eventTests += @{EventID = 4698; LogName = "Security"; Description = "Scheduled Task Created"}
-    } catch {
+        $eventTests += @{EventID = 4698; LogName = "Security"; Description = "Scheduled Task Created" }
+    }
+    catch {
         Write-Host "    Warning: Could not create scheduled task (requires admin)" -ForegroundColor Yellow
     }
 
@@ -292,7 +304,8 @@ if ($TestEventGeneration) {
         $passed = $null -ne $events -and $events.Count -gt 0
         $details = if ($passed) {
             "Found $($events.Count) event(s)"
-        } else {
+        }
+        else {
             "No events found in $($test.LogName)"
         }
 
@@ -327,15 +340,16 @@ foreach ($eventID in $criticalEventIDs.Keys) {
 
     if ($count -gt 0) {
         Write-Host "  [+] Event $eventID ($($criticalEventIDs[$eventID])): $count events" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "  [-] Event $eventID ($($criticalEventIDs[$eventID])): No events found" -ForegroundColor Yellow
     }
 
     $script:TestResults.Coverage["Event_$eventID"] = @{
-        EventID = $eventID
+        EventID     = $eventID
         Description = $criticalEventIDs[$eventID]
-        Count = $count
-        Present = $count -gt 0
+        Count       = $count
+        Present     = $count -gt 0
     }
 }
 
@@ -408,7 +422,8 @@ $overallPassed = ($auditPercentage -ge 70) -and ($regPercentage -ge 70)
 if ($overallPassed) {
     Write-Host "Overall Status: HEALTHY" -ForegroundColor Green
     exit 0
-} else {
+}
+else {
     Write-Host "Overall Status: NEEDS ATTENTION" -ForegroundColor Red
     exit 1
 }

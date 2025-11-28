@@ -1,34 +1,29 @@
-# Sürüm Notları - v2.0.0
+# Sürüm Notları - v2.1.0
 
 ## Yenilikler
 
-Bu sürüm, Windows olay denetimi ve test yeteneklerinde önemli iyileştirmeler ve yeni özellikler sunmaktadır.
+Bu sürüm, algoritmik güncellemeler ve genişletilmiş MITRE ATT&CK kapsamı ile denetim ve test yeteneklerini güçlendirmektedir.
 
 ### 🚀 Yeni Özellikler
 
-- **Docker Desteği**: İzole edilmiş Windows konteynerlerinde güvenli test imkanı.
-  - `Dockerfile` ve `docker-compose.yml` eklendi.
-  - `Run-DockerTests.ps1` ve `Local-DockerTest.ps1` yardımcı komut dosyaları.
-- **Sentetik Günlük Oluşturucu**: `Generate-SyntheticLogs.ps1` ile gerçekçi saldırı senaryoları (Credential Dumping, Lateral Movement, vb.) oluşturma.
-- **Gelişmiş Test Paketi**: `Test-EventIDGeneration.ps1` güncellendi ve kapsamı genişletildi.
-- **CI/CD Entegrasyonu**: GitHub Actions ile otomatik test iş akışları (`windows-docker-tests.yml`).
-
-### 🛠️ İyileştirmeler
-
-- **Denetim Komut Dosyaları**: `SysmonLikeAudit.ps1` ve `win-audit.ps1` optimize edildi.
-- **Dokümantasyon**: Türkçe README ve Wiki desteği eklendi.
-- **Performans**: Docker imajı oluşturma süreci (BuildKit devre dışı bırakılarak) iyileştirildi.
+- **Gelişmiş Denetim Kapsamı**:
+  - `Process Termination` (Olay 4689) denetimi eklendi.
+  - `System Integrity` ve `RPC Events` denetimi eklendi.
+- **MITRE ATT&CK Eşleşmeleri**:
+  - T1070.006 (Timestomp) eklendi.
+  - T1569.002 (Service Execution) eklendi.
+  - T1003.001 (LSASS Memory) için AccessMask detayları eklendi.
+- **Test Güncellemeleri**:
+  - `Test-EventIDGeneration.ps1` artık İşlem Sonlandırma ve Kayıt Defteri değişikliklerini daha kapsamlı test ediyor.
+  - `Local-DockerTest.ps1` sözdizimi hataları giderildi ve kararlılığı artırıldı.
 
 ### 🐛 Düzeltmeler
 
-- PowerShell komut dosyalarındaki sözdizimi hataları giderildi.
-- Docker birim bağlama (volume mount) sorunları çözüldü.
-- `Run-DockerTests.ps1` içindeki parametre çakışması giderildi.
+- `Local-DockerTest.ps1` içindeki kritik sözdizimi hataları (try/catch blokları) düzeltildi.
+- `Test-EventIDGeneration.ps1` içindeki test mantığı iyileştirildi.
 
 ## Kurulum ve Kullanım
 
-1. Depoyu indirin.
-2. `scripts` klasöründeki yapılandırma komut dosyalarını Yönetici olarak çalıştırın.
-3. Test etmek için `Local-DockerTest.ps1` kullanın.
-
-Daha fazla bilgi için `README.tr.md` ve `docs/WIKI.md` dosyalarına bakın.
+1. Depoyu güncelleyin.
+2. `SysmonLikeAudit.ps1` komut dosyasını yeniden çalıştırarak yeni denetim ilkelerini uygulayın.
+3. `Test-EventIDGeneration.ps1 -TestEventGeneration` ile yeni olayların (4689 vb.) oluştuğunu doğrulayın.

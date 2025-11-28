@@ -36,29 +36,8 @@ RUN wevtutil sl Security /ms:67108864; `
     wevtutil sl Application /ms:67108864; `
     wevtutil sl "Microsoft-Windows-PowerShell/Operational" /ms:67108864
 
-# Enable advanced audit policies required for testing
-RUN auditpol /set /category:"Object Access" /success:enable /failure:enable; `
-    auditpol /set /category:"Logon/Logoff" /success:enable /failure:enable; `
-    auditpol /set /category:"Process Tracking" /success:enable /failure:enable; `
-    auditpol /set /category:"Account Management" /success:enable /failure:enable; `
-    auditpol /set /category:"Policy Change" /success:enable /failure:enable; `
-    auditpol /set /category:"Privilege Use" /success:enable /failure:enable; `
-    auditpol /set /category:"System" /success:enable /failure:enable
-
-# Enable process command line logging
-RUN reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Audit" /v ProcessCreationIncludeCmdLine_Enabled /t REG_DWORD /d 1 /f
-
-# Enable PowerShell Module Logging
-RUN reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging" /v EnableModuleLogging /t REG_DWORD /d 1 /f; `
-    reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging\ModuleNames" /v "*" /t REG_SZ /d "*" /f
-
-# Enable PowerShell Script Block Logging
-RUN reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging" /v EnableScriptBlockLogging /t REG_DWORD /d 1 /f
-
-# Enable PowerShell Transcription
-RUN reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" /v EnableTranscripting /t REG_DWORD /d 1 /f; `
-    reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" /v OutputDirectory /t REG_SZ /d "C:\pstranscripts" /f; `
-    reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" /v EnableInvocationHeader /t REG_DWORD /d 1 /f
+# Run SysmonLikeAudit.ps1 to configure comprehensive auditing and logging
+RUN powershell -Command ".\scripts\SysmonLikeAudit.ps1"
 
 # Health check to verify Event Log service is running
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 `

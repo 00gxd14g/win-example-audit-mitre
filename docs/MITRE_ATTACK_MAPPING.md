@@ -29,6 +29,7 @@ This document provides a comprehensive mapping between Windows Security Event ID
 | T1047 | Windows Management Instrumentation | 4688, 4104 | Monitor for WMI process execution (wmic.exe, scrcons.exe) and PowerShell WMI cmdlets |
 | T1203 | Exploitation for Client Execution | 4688, 4663 | Unusual process relationships (e.g., Office spawning cmd.exe/powershell.exe) |
 | T1204 | User Execution | 4688, 4663 | Monitor execution from temp directories, downloads, or with suspicious file extensions |
+| T1569.002 | Service Execution | 7045, 4697, 4688 | Monitor for new service installation (7045/4697) and execution of service binaries. |
 
 ### TA0003 - Persistence
 
@@ -66,12 +67,13 @@ This document provides a comprehensive mapping between Windows Security Event ID
 | T1036 | Masquerading | 4688, 4663 | Processes with names similar to legitimate Windows binaries running from unusual locations |
 | T1027 | Obfuscated Files or Information | 4688, 4104, 4663 | PowerShell with encoded commands, execution from archives |
 | T1202 | Indirect Command Execution | 4688 | Monitor for forfiles, pcalua, etc. executing commands |
+| T1070.006 | Timestomp | 4663 | Monitor for file attribute changes (AccessMask 0x100 - FILE_WRITE_ATTRIBUTES) on sensitive files. |
 
 ### TA0006 - Credential Access
 
 | Technique ID | Technique Name | Event IDs | Description |
 |--------------|----------------|-----------|-------------|
-| T1003.001 | LSASS Memory | 4656, 4663, 10 (Sysmon) | Monitor for process access to lsass.exe, especially with PROCESS_VM_READ permission |
+| T1003.001 | LSASS Memory | 4656, 4663, 10 (Sysmon) | Monitor for process access to lsass.exe. Look for AccessMask 0x1010 (PROCESS_VM_READ) or 0x1410. |
 | T1003.002 | Security Account Manager | 4656, 4663, 4661 | Access to SAM registry hive or SAM database files |
 | T1003.003 | NTDS | 4662, 4663, 4656 | Monitor access to ntds.dit file and AD database operations |
 | T1558.003 | Kerberoasting | 4769 | Multiple service ticket requests (4769) with RC4 encryption, especially for user accounts with SPNs |

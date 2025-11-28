@@ -41,15 +41,15 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet('Build', 'Run', 'Test', 'Shell', 'Stop', 'Clean', 'All', 'Logs')]
     [string]$Action = 'All',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet('All', 'AuditConfig', 'EventGeneration', 'Synthetic', 'Integration')]
     [string]$TestSuite = 'All',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$Interactive
 )
 
@@ -62,16 +62,17 @@ $ProjectRoot = Split-Path -Parent $ScriptRoot
 # Helper functions
 function Write-Header {
     param([string]$Message)
-    Write-Host "`n╔════════════════════════════════════════════╗" -ForegroundColor Cyan
-    Write-Host "║  $($Message.PadRight(41)) ║" -ForegroundColor Cyan
-    Write-Host "╚════════════════════════════════════════════╝`n" -ForegroundColor Cyan
+    Write-Host "`n==========================================" -ForegroundColor Cyan
+    Write-Host "  $($Message.PadRight(41)) " -ForegroundColor Cyan
+    Write-Host "==========================================`n" -ForegroundColor Cyan
 }
 
 function Test-DockerRunning {
     try {
         docker ps | Out-Null
         return $true
-    } catch {
+    }
+    catch {
         Write-Host "Error: Docker is not running or not accessible" -ForegroundColor Red
         Write-Host "Please ensure Docker Desktop is running with Windows containers enabled" -ForegroundColor Yellow
         return $false
@@ -92,22 +93,23 @@ function Build-DockerImage {
     Write-Header "Building Docker Image"
 
     Push-Location $ProjectRoot
-    try {
-        Write-Host "Building image: $ImageName" -ForegroundColor Yellow
-        Write-Host "This may take several minutes on first build..." -ForegroundColor Gray
+    
+    Write-Host "Building image: $ImageName" -ForegroundColor Yellow
+    Write-Host "This may take several minutes on first build..." -ForegroundColor Gray
 
-        docker build -t "${ImageName}:latest" -t "${ImageName}:dev" .
+    docker build -t "${ImageName}:latest" -t "${ImageName}:dev" .
 
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "`n✓ Image built successfully!" -ForegroundColor Green
-            docker images $ImageName
-        } else {
-            Write-Host "`n✗ Image build failed!" -ForegroundColor Red
-            exit 1
-        }
-    } finally {
-        Pop-Location
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "`nSUCCESS: Image built successfully!" -ForegroundColor Green
+        docker images $ImageName
     }
+    else {
+        Write-Host "`nERROR: Image build failed!" -ForegroundColor Red
+        Pop-Location
+        exit 1
+    }
+    
+    Pop-Location
 }
 
 function Start-Container {
@@ -118,7 +120,8 @@ function Start-Container {
         if (Test-ContainerRunning) {
             Write-Host "Container is already running" -ForegroundColor Green
             return
-        } else {
+        }
+        else {
             Write-Host "Starting existing container..." -ForegroundColor Yellow
             docker start $ContainerName
             Start-Sleep -Seconds 5
@@ -158,10 +161,11 @@ function Start-Container {
         $health = docker inspect --format='{{.State.Health.Status}}' $ContainerName 2>$null
         Write-Host "Container health: $health" -ForegroundColor Cyan
 
-        Write-Host "`n✓ Container started successfully!" -ForegroundColor Green
+        Write-Host "`nSUCCESS: Container started successfully!" -ForegroundColor Green
         docker ps --filter "name=$ContainerName"
-    } else {
-        Write-Host "`n✗ Failed to start container!" -ForegroundColor Red
+    }
+    else {
+        Write-Host "`nERROR: Failed to start container!" -ForegroundColor Red
         exit 1
     }
 }
@@ -189,7 +193,7 @@ function Invoke-Tests {
 
     docker cp "${ContainerName}:C:\test-results\." "$ProjectRoot\test-results\"
 
-    Write-Host "`n✓ Tests complete! Results saved to: $ProjectRoot\test-results" -ForegroundColor Green
+    Write-Host "`nSUCCESS: Tests complete! Results saved to: $ProjectRoot\test-results" -ForegroundColor Green
 }
 
 function Open-Shell {
@@ -224,14 +228,15 @@ function Stop-Container {
     if (Test-ContainerRunning) {
         Write-Host "Stopping container: $ContainerName" -ForegroundColor Yellow
         docker stop $ContainerName
-    } else {
+    }
+    else {
         Write-Host "Container is not running" -ForegroundColor Yellow
     }
 
     if (Test-ContainerExists) {
         Write-Host "Removing container: $ContainerName" -ForegroundColor Yellow
         docker rm $ContainerName
-        Write-Host "✓ Container removed" -ForegroundColor Green
+        Write-Host "SUCCESS: Container removed" -ForegroundColor Green
     }
 }
 
@@ -244,7 +249,7 @@ function Remove-Everything {
             docker stop $ContainerName
         }
         docker rm $ContainerName
-        Write-Host "✓ Container removed" -ForegroundColor Green
+        Write-Host "SUCCESS: Container removed" -ForegroundColor Green
     }
 
     # Remove image
@@ -252,7 +257,7 @@ function Remove-Everything {
     if ($imageExists) {
         Write-Host "Removing image: $ImageName" -ForegroundColor Yellow
         docker rmi "${ImageName}:latest" "${ImageName}:dev" -f
-        Write-Host "✓ Image removed" -ForegroundColor Green
+        Write-Host "SUCCESS: Image removed" -ForegroundColor Green
     }
 
     # Clean up dangling images
@@ -262,15 +267,12 @@ function Remove-Everything {
         docker rmi $dangling
     }
 
-    Write-Host "`n✓ Cleanup complete!" -ForegroundColor Green
+    Write-Host "`nSUCCESS: Cleanup complete!" -ForegroundColor Green
 }
 
 # Main execution
 try {
-    Write-Host "`n╔════════════════════════════════════════════╗" -ForegroundColor Cyan
-    Write-Host "║  Windows Audit Docker Testing              ║" -ForegroundColor Cyan
-    Write-Host "║  Local Development Helper                  ║" -ForegroundColor Cyan
-    Write-Host "╚════════════════════════════════════════════╝" -ForegroundColor Cyan
+    Write-Header "Windows Audit Docker Testing"
 
     # Check Docker is available
     if (-not (Test-DockerRunning)) {
@@ -309,8 +311,9 @@ try {
 
     Write-Host ""
 
-} catch {
-    Write-Host "`nError: $_" -ForegroundColor Red
+}
+catch {
+    Write-Host "Error: $_" -ForegroundColor Red
     Write-Host $_.ScriptStackTrace -ForegroundColor Red
     exit 1
 }

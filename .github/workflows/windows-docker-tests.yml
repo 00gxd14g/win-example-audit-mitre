@@ -64,6 +64,7 @@ jobs:
         shell: pwsh
 
       # Run Audit Configuration Tests
+      # This verifies the default configuration baked into the image (SysmonLikeAudit.ps1)
       - name: Run Audit Configuration Tests
         if: github.event.inputs.test_suite == 'All' || github.event.inputs.test_suite == 'AuditConfig' || github.event_name != 'workflow_dispatch'
         run: |
@@ -76,6 +77,7 @@ jobs:
         shell: pwsh
 
       # Run Event Generation Tests
+      # This verifies that the configured audit policies (SysmonLikeAudit) actually generate the expected events (including new categories like Process Termination)
       - name: Run Event Generation Tests
         if: always() && (github.event.inputs.test_suite == 'All' || github.event.inputs.test_suite == 'EventGeneration' || github.event_name != 'workflow_dispatch')
         run: |
@@ -100,6 +102,7 @@ jobs:
         shell: pwsh
 
       # Run Integration Tests
+      # This verifies the runtime application of the MITRE-guided policy (win-audit.ps1)
       - name: Run Integration Tests
         if: always() && (github.event.inputs.test_suite == 'All' || github.event.inputs.test_suite == 'Integration' || github.event_name != 'workflow_dispatch')
         run: |

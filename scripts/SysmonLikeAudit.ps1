@@ -46,6 +46,9 @@ auditpol /set /subcategory:"IPsec Driver" /success:enable /failure:enable
 
 # Detailed Tracking
 auditpol /set /subcategory:"Process Creation" /success:enable /failure:enable
+auditpol /set /subcategory:"Process Termination" /success:enable /failure:enable
+auditpol /set /subcategory:"RPC Events" /success:enable /failure:enable
+auditpol /set /subcategory:"System Integrity" /success:enable /failure:enable
 
 # Logon/Logoff and Account Management
 auditpol /set /subcategory:"Logon" /success:enable /failure:enable
@@ -70,9 +73,9 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" /v O
 # Event log size/retention
 $maxSize = 33554432
 $logs = @(
-  "HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\Security",
-  "HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\System",
-  "HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\Application"
+    "HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\Security",
+    "HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\System",
+    "HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\Application"
 )
 foreach ($log in $logs) {
     Set-ItemProperty -Path $log -Name "MaxSize" -Value $maxSize
