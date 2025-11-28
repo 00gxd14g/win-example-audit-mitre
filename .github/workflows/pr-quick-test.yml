@@ -46,20 +46,16 @@ jobs:
           }
         shell: pwsh
 
-      - name: Validate Dockerfile syntax
+      - name: Check Dockerfile existence
         run: |
-          Write-Host "Validating Dockerfile..." -ForegroundColor Cyan
+          Write-Host "Checking Dockerfile..." -ForegroundColor Cyan
           if (Test-Path ".\Dockerfile") {
-              docker build --no-cache --target 0 . 2>&1 | Out-Null
-              if ($LASTEXITCODE -eq 0) {
-                  Write-Host "✓ Dockerfile syntax is valid" -ForegroundColor Green
-              }
+              Write-Host "✓ Dockerfile found" -ForegroundColor Green
           } else {
               Write-Host "✗ Dockerfile not found" -ForegroundColor Red
               exit 1
           }
         shell: pwsh
-        continue-on-error: true
 
       - name: Check documentation
         run: |

@@ -29,11 +29,10 @@ env:
   COMPOSE_DOCKER_CLI_BUILD: 1
 
 jobs:
-  # Job 1: Build Windows Docker Image
-  build:
-    name: Build Windows Container
+  build-and-test:
+    name: Build and Test
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       - name: Checkout repository
@@ -58,271 +57,77 @@ jobs:
           docker images win-audit-test
         shell: pwsh
 
-      - name: Save Docker image
-        run: |
-          docker save win-audit-test:latest -o win-audit-test.tar
-        shell: pwsh
-
-      - name: Upload Docker image artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-image
-          path: win-audit-test.tar
-          retention-days: 1
-
-  # Job 2: Run Audit Configuration Tests
-  test-audit-config:
-    name: Test Audit Configuration
-    needs: build
-    runs-on: windows-latest
-    timeout-minutes: 20
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download Docker image
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image
-
-      - name: Load Docker image
-        run: |
-          docker load -i win-audit-test.tar
-        shell: pwsh
-
-      - name: Start container
-        run: |
-          docker run -d --name audit-test-container win-audit-test:latest
-          Start-Sleep -Seconds 10
-        shell: pwsh
-
-      - name: Check container status
-        run: |
-          docker ps -a
-          docker logs audit-test-container
-        shell: pwsh
-
-      - name: Run audit configuration tests
-        run: |
-          docker exec audit-test-container powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite AuditConfig -OutputFormat JSON -Verbose
-        shell: pwsh
-
-      - name: Copy test results from container
-        if: always()
-        run: |
-          New-Item -ItemType Directory -Force -Path .\test-results
-          docker cp audit-test-container:C:\test-results\. .\test-results\
-        shell: pwsh
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: audit-config-test-results
-          path: test-results/
-
-      - name: Cleanup container
-        if: always()
-        run: |
-          docker stop audit-test-container
-          docker rm audit-test-container
-        shell: pwsh
-
-  # Job 3: Run Event Generation Tests
-  test-event-generation:
-    name: Test Event Generation
-    needs: build
-    runs-on: windows-latest
-    timeout-minutes: 25
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download Docker image
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image
-
-      - name: Load Docker image
-        run: |
-          docker load -i win-audit-test.tar
-        shell: pwsh
-
-      - name: Start container
-        run: |
-          docker run -d --name event-test-container win-audit-test:latest
-          Start-Sleep -Seconds 10
-        shell: pwsh
-
-      - name: Run event generation tests
-        run: |
-          docker exec event-test-container powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite EventGeneration -OutputFormat JSON -Verbose
-        shell: pwsh
-
-      - name: Copy test results from container
-        if: always()
-        run: |
-          New-Item -ItemType Directory -Force -Path .\test-results
-          docker cp event-test-container:C:\test-results\. .\test-results\
-        shell: pwsh
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: event-generation-test-results
-          path: test-results/
-
-      - name: Cleanup container
-        if: always()
-        run: |
-          docker stop event-test-container
-          docker rm event-test-container
-        shell: pwsh
-
-  # Job 4: Run Synthetic Log Generation Tests
-  test-synthetic-logs:
-    name: Test Synthetic Logs
-    needs: build
-    runs-on: windows-latest
-    timeout-minutes: 20
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download Docker image
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image
-
-      - name: Load Docker image
-        run: |
-          docker load -i win-audit-test.tar
-        shell: pwsh
-
-      - name: Start container
-        run: |
-          docker run -d --name synthetic-test-container win-audit-test:latest
-          Start-Sleep -Seconds 10
-        shell: pwsh
-
-      - name: Run synthetic log generation tests
-        run: |
-          docker exec synthetic-test-container powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite Synthetic -OutputFormat JSON -Verbose
-        shell: pwsh
-
-      - name: Copy test results and logs from container
-        if: always()
+      # Create directories for results
+      - name: Prepare test directories
         run: |
           New-Item -ItemType Directory -Force -Path .\test-results
           New-Item -ItemType Directory -Force -Path .\synthetic-logs
-          docker cp synthetic-test-container:C:\test-results\. .\test-results\
         shell: pwsh
 
-      - name: Upload test results
+      # Run Audit Configuration Tests
+      - name: Run Audit Configuration Tests
+        if: github.event.inputs.test_suite == 'All' || github.event.inputs.test_suite == 'AuditConfig' || github.event_name != 'workflow_dispatch'
+        run: |
+          Write-Host "Starting Audit Configuration Tests..." -ForegroundColor Cyan
+          docker run --rm --name audit-test-container `
+            -v ${PWD}/scripts:C:\workspace\scripts `
+            -v ${PWD}/test-results:C:\test-results `
+            win-audit-test:latest `
+            powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite AuditConfig -OutputFormat JSON -Verbose
+        shell: pwsh
+
+      # Run Event Generation Tests
+      - name: Run Event Generation Tests
+        if: always() && (github.event.inputs.test_suite == 'All' || github.event.inputs.test_suite == 'EventGeneration' || github.event_name != 'workflow_dispatch')
+        run: |
+          Write-Host "Starting Event Generation Tests..." -ForegroundColor Cyan
+          docker run --rm --name event-test-container `
+            -v ${PWD}/scripts:C:\workspace\scripts `
+            -v ${PWD}/test-results:C:\test-results `
+            win-audit-test:latest `
+            powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite EventGeneration -OutputFormat JSON -Verbose
+        shell: pwsh
+
+      # Run Synthetic Log Generation Tests
+      - name: Run Synthetic Log Generation Tests
+        if: always() && (github.event.inputs.test_suite == 'All' || github.event.inputs.test_suite == 'Synthetic' || github.event_name != 'workflow_dispatch')
+        run: |
+          Write-Host "Starting Synthetic Log Generation Tests..." -ForegroundColor Cyan
+          docker run --rm --name synthetic-test-container `
+            -v ${PWD}/scripts:C:\workspace\scripts `
+            -v ${PWD}/test-results:C:\test-results `
+            win-audit-test:latest `
+            powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite Synthetic -OutputFormat JSON -Verbose
+        shell: pwsh
+
+      # Run Integration Tests
+      - name: Run Integration Tests
+        if: always() && (github.event.inputs.test_suite == 'All' || github.event.inputs.test_suite == 'Integration' || github.event_name != 'workflow_dispatch')
+        run: |
+          Write-Host "Starting Integration Tests..." -ForegroundColor Cyan
+          # Integration tests might need a persistent container or specific isolation
+          docker run --rm --name integration-test-container `
+            --isolation process `
+            -v ${PWD}/scripts:C:\workspace\scripts `
+            -v ${PWD}/test-results:C:\test-results `
+            win-audit-test:latest `
+            powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite Integration -OutputFormat JSON -Verbose
+        shell: pwsh
+
+      # Generate Report
+      - name: Generate Test Report
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: synthetic-logs-test-results
-          path: test-results/
-
-      - name: Cleanup container
-        if: always()
-        run: |
-          docker stop synthetic-test-container
-          docker rm synthetic-test-container
-        shell: pwsh
-
-  # Job 5: Run Integration Tests
-  test-integration:
-    name: Integration Tests
-    needs: build
-    runs-on: windows-latest
-    timeout-minutes: 30
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download Docker image
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image
-
-      - name: Load Docker image
-        run: |
-          docker load -i win-audit-test.tar
-        shell: pwsh
-
-      - name: Start container with proper isolation
-        run: |
-          docker run -d --name integration-test-container win-audit-test:latest
-          Start-Sleep -Seconds 10
-        shell: pwsh
-
-      - name: Check container health
-        run: |
-          docker ps -a
-          docker inspect integration-test-container
-        shell: pwsh
-
-      - name: Run integration tests
-        run: |
-          docker exec integration-test-container powershell -File C:\workspace\scripts\Run-DockerTests.ps1 -TestSuite Integration -OutputFormat JSON -Verbose
-        shell: pwsh
-
-      - name: Copy test results from container
-        if: always()
-        run: |
-          New-Item -ItemType Directory -Force -Path .\test-results
-          docker cp integration-test-container:C:\test-results\. .\test-results\
-        shell: pwsh
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: integration-test-results
-          path: test-results/
-
-      - name: Display container logs
-        if: always()
-        run: |
-          docker logs integration-test-container
-        shell: pwsh
-
-      - name: Cleanup container
-        if: always()
-        run: |
-          docker stop integration-test-container
-          docker rm integration-test-container
-        shell: pwsh
-
-  # Job 6: Generate Test Report
-  report:
-    name: Generate Test Report
-    needs: [test-audit-config, test-event-generation, test-synthetic-logs, test-integration]
-    runs-on: windows-latest
-    if: always()
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download all test results
-        uses: actions/download-artifact@v4
-        with:
-          path: all-test-results
-
-      - name: Generate combined test report
         run: |
           $results = @()
-          Get-ChildItem -Path "all-test-results" -Filter "*.json" -Recurse | ForEach-Object {
-              $content = Get-Content $_.FullName -Raw | ConvertFrom-Json
-              $results += $content
+          if (Test-Path ".\test-results") {
+              Get-ChildItem -Path ".\test-results" -Filter "*.json" -Recurse | ForEach-Object {
+                  try {
+                      $content = Get-Content $_.FullName -Raw | ConvertFrom-Json
+                      $results += $content
+                  } catch {
+                      Write-Warning "Failed to parse $($_.FullName)"
+                  }
+              }
           }
 
           $summary = @{
@@ -364,7 +169,7 @@ jobs:
           | Total Tests | $($summary.TotalTests) |
           | Passed | $($summary.PassedTests) |
           | Failed | $($summary.FailedTests) |
-          | Success Rate | $([math]::Round(($summary.PassedTests / $summary.TotalTests) * 100, 2))% |
+          | Success Rate | $(if($summary.TotalTests -gt 0){[math]::Round(($summary.PassedTests / $summary.TotalTests) * 100, 2)}else{0})% |
 
           ## Test Results by Suite
 
@@ -382,24 +187,28 @@ jobs:
           Get-Content "TEST_REPORT.md"
         shell: pwsh
 
-      - name: Upload test summary
+      - name: Upload test results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-summary
+          name: test-results
           path: |
+            test-results/
             test-summary.json
             TEST_REPORT.md
 
       - name: Comment on PR (if applicable)
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && always()
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const report = fs.readFileSync('TEST_REPORT.md', 'utf8');
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: report
-            });
+            if (fs.existsSync('TEST_REPORT.md')) {
+              const report = fs.readFileSync('TEST_REPORT.md', 'utf8');
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: report
+              });
+            }
